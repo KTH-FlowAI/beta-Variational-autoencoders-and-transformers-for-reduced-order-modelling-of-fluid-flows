@@ -88,8 +88,8 @@ def make_Rev_Prediction(test_data, model,
 
 
 def Sliding_Window_Error(test_data,
-                         model, device,
-                         in_dim,window = 100):
+                        model, device,
+                        in_dim,window = 100):
     """
     Compute the sliding window error on test dataset
     Args:
