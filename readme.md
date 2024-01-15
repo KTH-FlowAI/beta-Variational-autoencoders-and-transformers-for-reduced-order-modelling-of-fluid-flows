@@ -6,3 +6,14 @@ The code in this repository features a Python implementation of reduced-order mo
 
 ## Data availabilty
 We share the down-sampled data in [zendo](https://zenodo.org/records/10501216). We also provide the pre-trained models of $\beta$-VAE, transformers and LSTM in this repository. The obtined results such as temporal and spatial modes are available.
+
+
+## Structure
+
++ *data*: Dataset used for the present study 
+
++ *utils*: Functions
+
++ *conf*: Configurations for hyper parameters 
+
++ *NNs*: The architecture of neural networks 
