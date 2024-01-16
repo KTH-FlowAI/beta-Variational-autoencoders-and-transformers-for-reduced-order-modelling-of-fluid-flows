@@ -42,50 +42,6 @@ def make_Prediction(test_data, model,
 
     return Preds
 
-def make_Rev_Prediction(test_data, model,
-                    device, in_dim, next_step):
-    """
-    Function for generat the prediction data as spcial prediction  
-    
-    Args:
-        test_data   :  A numpy array of test data, with shape of [Ntime, Nmode]
-        model       :  A torch.nn.Module object as model
-        device      :  String of name of device    
-        in_dim      :  Integar of TimeDelay size
-        next_step   :  Future time step to predict
-    
-    Returns:
-        preds    : A numpy array of the prediction  
-    """
-    from copy import deepcopy
-    import torch 
-    from tqdm import tqdm
-
-
-    
-    model.eval()
-    model.to(device)
-    Preds  = deepcopy(test_data)
-    seq_len = max([Preds.shape[0],Preds.shape[1]])
-    print(f"The sequence length = {seq_len}")
-
-    for i in tqdm(range(in_dim,seq_len-next_step)):
-        
-        feature = Preds[None,i-in_dim:i,:]
-
-        x = torch.from_numpy(feature.transpose(0,2,1))
-        x = x.float().to(device)
-        pred = model(x)
-
-        pred = pred.cpu().detach().numpy().transpose(0,2,1)
-
-        Preds[i:i+next_step,:] = pred[0,:,:]
-
-    return Preds
-
-
-
-
 
 def Sliding_Window_Error(test_data,
                         model, device,

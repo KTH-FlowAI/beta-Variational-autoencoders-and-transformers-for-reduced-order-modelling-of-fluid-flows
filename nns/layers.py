@@ -2,7 +2,7 @@
 Script for the encoder and decoder layer for full transformer
 """
 
-from    NNs.attns import MultiHeadAttention, DenseEasyAttn
+from    nns.attns import MultiHeadAttention, DenseEasyAttn
 from    torch           import nn 
 
 class PositionWiseFeedForward(nn.Module):
@@ -26,11 +26,11 @@ class PositionWiseFeedForward(nn.Module):
         self.fc1 = nn.Linear(d_model, d_ff)
         self.fc2 = nn.Linear(d_ff, d_model)
         
-        if activation is "relu":
+        if activation == "relu":
             self.act = nn.ReLU()
-        if activation is "gelu":
+        if activation == "gelu":
             self.act = nn.GELU()
-        if activation is "elu":
+        if activation == "elu":
             self.act = nn.ELU()
 
 

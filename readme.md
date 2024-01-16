@@ -16,4 +16,8 @@ We share the down-sampled data in [zendo](https://zenodo.org/records/10501216). 
 
 + *conf*: Configurations for hyper parameters 
 
-+ *NNs*: The architecture of neural networks 
++ *nns*: The architecture of neural networks 
+
++ *res*: Storage of results and figures
+
++ 

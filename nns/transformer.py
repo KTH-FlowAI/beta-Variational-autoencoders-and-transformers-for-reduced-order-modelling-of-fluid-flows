@@ -3,8 +3,8 @@ The transfomer encoders using new embeding layer
 
 """
 
-from NNs.layers           import EncoderLayer, easyEncoderLayer
-from NNs.embedding        import TimeSpaceEmbedding
+from nns.layers           import EncoderLayer, easyEncoderLayer
+from nns.embedding        import TimeSpaceEmbedding
 from    torch                   import nn
 
 class EmbedTransformerEncoder(nn.Module):

@@ -5,7 +5,7 @@ Recurrent network model in torch.nn.Module
 """
 import torch
 from torch.nn import Module, ModuleList, Linear, Dropout, LayerNorm
-from NNs.embedding import SineActivation, CosineActivation, PosEncoding
+from nns.embedding import SineActivation, CosineActivation, PosEncoding
 import torch.nn as nn 
 
 class LSTMs(nn.Module):
