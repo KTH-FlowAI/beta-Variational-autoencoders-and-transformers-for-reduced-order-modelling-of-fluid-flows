@@ -69,7 +69,16 @@ class vaeRunner(nn.Module):
         
         datafile = data_path + "Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
 
-        try: 
+        try:
+            if not os.path.exists(datafile):
+                import urllib.request
+                try:
+                    print(f"{datafile}")
+                    print("Not found, trying to download example dataset")
+                    urllib.request.urlretrieve('https://zenodo.org/records/10501216/files/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5?download=1', datafile)
+                    print(f"File downloaded successfully to {datafile}")
+                except Exception as e:
+                    print(f"Failed to download sample dataset. Error: {e}")
             u_scaled, self.mean, self.std = loadData(datafile)
             ## Down-Sample the data with frequency
             ## since we already down-sampled it for database, we skip it here
@@ -80,7 +89,7 @@ class vaeRunner(nn.Module):
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
         except: 
-            print(f"Error: Faild loading data")
+            print(f"Error: Failed loading data")
 
         self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:n_train],
                                                 d_val=u_scaled[n_train:],
@@ -90,7 +99,7 @@ class vaeRunner(nn.Module):
                 f"Num val batch = {len(self.val_dl)}")
         
 #-------------------------------------------------
-    def complie(self):
+    def compile(self):
         """
         
         Compile the optimiser, schedulers and loss function for training
