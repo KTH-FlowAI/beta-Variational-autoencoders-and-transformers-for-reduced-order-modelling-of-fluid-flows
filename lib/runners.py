@@ -12,7 +12,7 @@ import torch
 from torch          import nn
 
 import utils.train
-from utils.model    import get_predictors, get_vae
+from utils.model    import get_predictors, get_vae, save_checkpoint, load_checkpoint
 from utils.train    import fit
 from utils.datas    import loadData, get_vae_DataLoader , make_DataLoader, make_Sequence
 from utils.pp       import make_Prediction, Sliding_Window_Error
@@ -23,6 +23,8 @@ data_path   = 'data/'
 model_path  = 'models/'; 
 res_path    = 'res/'
 fig_path    = 'figs/'
+log_path    = 'train_logs/'
+chekp_path  = 'checkpoints'
 
 Path(data_path).mkdir(exist_ok=True)
 Path(model_path).mkdir(exist_ok=True)
@@ -148,7 +150,7 @@ class vaeRunner(nn.Module):
         from torch.utils.tensorboard import SummaryWriter
 
         print(f"Training {self.filename}")
-        logger = SummaryWriter(log_dir='./train_logs/' + self.filename)
+        logger = SummaryWriter(log_dir=log_path + self.filename)
 
         bestloss = 1e6
         loss = 1e6
@@ -187,6 +189,18 @@ class vaeRunner(nn.Module):
             logger.add_scalar('General loss/MSE_test', MSE_test, epoch)
             logger.add_scalar('General loss/KLD_test', KLD_test, epoch)
             logger.add_scalar('Optimizer/LR', self.opt_sch.get_last_lr()[0], epoch)
+
+            if (loss_test < bestloss and epoch > 100):
+                bestloss = loss_test
+                checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
+                ckp_file = f'{chekp_path}{self.filename}_epoch_bestTest.pth.tar'
+                save_checkpoint(state=checkpoint, path_name=ckp_file)
+                print(f'## Checkpoint. Epoch: {epoch}, test loss: {loss_test}, saving checkpoint {ckp_file}')
+
+        checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
+        ckp_file = f'{chekp_path}{self.filename}_epoch_final.pth.tar'
+        save_checkpoint(state=checkpoint, path_name=ckp_file)
+        print(f'Checkpoint. Final epoch, loss: {loss}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
 
 
