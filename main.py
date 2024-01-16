@@ -13,6 +13,7 @@ if __name__ == "__main__":
     
     bvae   = vaeRunner(device)
     bvae.get_data()
+    bvae.compile()
 
     ## Time-series prediction runner 
     

@@ -84,15 +84,15 @@ class vaeRunner(nn.Module):
             ## since we already down-sampled it for database, we skip it here
             u_scaled            = u_scaled[::1]
             n_total             = u_scaled.shape[0]
-            n_train             = n_total - self.config.n_test
-            print(f"INFO: Data Summary: N train: {n_train:d}," + \
+            self.n_train             = n_total - self.config.n_test
+            print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
         except: 
             print(f"Error: Failed loading data")
 
-        self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:n_train],
-                                                d_val=u_scaled[n_train:],
+        self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:self.n_train],
+                                                d_val=u_scaled[self.n_train:],
                                                 device= self.device,
                                                 batch_size= self.config.batch_size)
         print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
@@ -122,7 +122,7 @@ class vaeRunner(nn.Module):
                 lr=self.config.lr, weight_decay=0)
         
         self.opt_sch = lr_scheduler.OneCycleLR(self.opt, 
-                                            max_lr=self.lr, 
+                                            max_lr=self.config.lr,
                                             total_steps=self.config.epochs, 
                                             div_factor=2, 
                                             final_div_factor=self.config.lr/self.config.lr_end, 
