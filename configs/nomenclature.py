@@ -22,7 +22,7 @@ def Name_VAE(cfg):
             f'lr{cfg.lr}OneCycleLR{cfg.lr_end}_'+\
             f'bs{cfg.batch_size}_'+\
             f'epochs{cfg.epochs}_'+\
-            f'nt{cfg.n_train}'
+            f'nt{cfg.n_test}'
     return name
 
 
@@ -38,8 +38,8 @@ def Make_Transformer_Name(cfg):
         name: A string for Transformer model
     """
 
-    case_name = f"{cfg.target}_" +\
-                f"{cfg.attn_type}Attn"+\
+    case_name = f"{cfg.target}" +\
+                f"_{cfg.attn_type}Attn"+\
                 f"_{cfg.in_dim}in_{cfg.d_model}dmodel_{cfg.next_step}next_{cfg.nmode}dim"+\
                 f"_{cfg.embed}emb_{cfg.num_head}h_{cfg.num_block}nb_{cfg.proj_dim}ff"+\
                 f"_{cfg.act_proj}act_{cfg.out_act}outact"+\

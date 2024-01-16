@@ -18,8 +18,8 @@ def get_vae(latent_dim):
         model      : (torch.nn.Module)The beta-VAE model
     """
 
-    from nns.vae import VAE
-    
+    from nns.beta_vae import VAE
+
     return VAE(latent_dim)
 
 

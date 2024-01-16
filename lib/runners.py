@@ -48,7 +48,7 @@ class vaeRunner(nn.Module):
         self.config     = cfg
         self.filename   = Name_VAE(self.config)
         
-        self.device     = self.device
+        self.device     = device
 
         self.model      = get_vae(self.config.latent_dim)
         
@@ -57,6 +57,9 @@ class vaeRunner(nn.Module):
         print(f"INIT betaVAE, device: {device}")
         print(f"Case Name:\n {self.filename}")
 
+
+#-------------------------------------------------
+
     def get_data(self): 
         """
         
@@ -64,13 +67,15 @@ class vaeRunner(nn.Module):
 
         """
         
-        datafile = "data/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
+        datafile = data_path + "Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
 
         try: 
-            u_scaled, mean, std = loadData(datafile)
-            u_scaled            = u_scaled[::self.config.delta_t]
-            n_total = u_scaled.shape[0]
-            n_train = n_total - self.config.n_test
+            u_scaled, self.mean, self.std = loadData(datafile)
+            ## Down-Sample the data with frequency
+            ## since we already down-sampled it for database, we skip it here
+            u_scaled            = u_scaled[::1]
+            n_total             = u_scaled.shape[0]
+            n_train             = n_total - self.config.n_test
             print(f"INFO: Data Summary: N train: {n_train:d}," + \
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
@@ -83,16 +88,48 @@ class vaeRunner(nn.Module):
                                                 batch_size= self.config.batch_size)
         print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
                 f"Num val batch = {len(self.val_dl)}")
-    
+        
+#-------------------------------------------------
     def complie(self):
         """
         
         Compile the optimiser, schedulers and loss function for training
 
-
+        
         """
 
+        from torch.optim import lr_scheduler
         
+        print("#"*30)
+        print(f"INFO: Start Compiling")
+
+        encoder_params = list(self.model.encoder.parameters())
+        decoder_params = list(self.model.decoder.parameters())
+
+        # get optimizer
+        self.opt = torch.optim.Adam(
+            [   {'params': encoder_params, 'weight_decay': self.config.encWdecay},
+                {'params': decoder_params, 'weight_decay': self.config.decWdecay}], 
+                lr=self.config.lr, weight_decay=0)
+        
+        self.opt_sch = lr_scheduler.OneCycleLR(self.opt, 
+                                            max_lr=self.lr, 
+                                            total_steps=self.config.epochs, 
+                                            div_factor=2, 
+                                            final_div_factor=self.config.lr/self.config.lr_end, 
+                                            pct_start=0.2)
+
+        print(f"INFO: Compiling Finished!")
+
+
+#-------------------------------------------------
+
+    def run(self):
+        """
+
+        Training beta-VAE
+        
+        """
 
 
 
@@ -119,6 +156,9 @@ class latentRunner(nn.Module):
         print(f"INFO: The model has been generated, num of parameter is {self.NumPara}")
         print(f"Case Name:\n {self.filename}")
 
+
+#-------------------------------------------------
+
     def train(self):
         print("#"*30)
         print("INFO: Start Training ")
@@ -130,6 +170,9 @@ class latentRunner(nn.Module):
         self.val_dl     = None
         print(f"INFO: Training finished, cleaned the data loader")
         print("#"*30)
+
+#-------------------------------------------------
+
 
     def get_data(self):
         """
@@ -149,6 +192,8 @@ class latentRunner(nn.Module):
         print(f"INFO: DataLoader Generated!")
         del data, X, Y
 
+#-------------------------------------------------
+
     def compile(self): 
         """
         Compile the model with optimizer, scheduler and loss function
@@ -158,7 +203,9 @@ class latentRunner(nn.Module):
         self.opt_sch =  [  
                         torch.optim.lr_scheduler.ExponentialLR(optimizer=self.opt, gamma= (1 - 0.01)) 
                         ]
-    
+
+#-------------------------------------------------
+
     def run(self): 
         """
         Training Model, we use the fit() function 
@@ -187,6 +234,8 @@ class latentRunner(nn.Module):
         torch.save(check_point,model_path + self.filename+".pt")
         print(f"INFO: The checkpoints has been saved!")
 
+#-------------------------------------------------
+
 
     def load_pretrain_model(self):
         try:
@@ -198,6 +247,8 @@ class latentRunner(nn.Module):
         self.model.load_state_dict(stat_dict)
         print(f'INFO: the state dict has been loaded!')
 
+
+#-------------------------------------------------
 
     def post_process(self,if_window=True,if_pmap=True):
         """

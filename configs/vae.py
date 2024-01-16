@@ -6,7 +6,7 @@ class VAE_config:
     
     delta_t = 5
     
-    batch_size = 256
+    batch_size = 32
     
     lr = 2e-4
     
@@ -18,7 +18,7 @@ class VAE_config:
     
     beta_init = 0.1
     
-    n_test = 15000//delta_t
+    n_test = 200 
     
     encWdecay = 0
     
