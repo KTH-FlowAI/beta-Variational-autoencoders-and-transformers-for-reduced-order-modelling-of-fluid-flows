@@ -145,6 +145,11 @@ class vaeRunner(nn.Module):
         Training beta-VAE
         
         """
+        from torch.utils.tensorboard import SummaryWriter
+
+        print(f"Training {self.filename}")
+        logger = SummaryWriter(log_dir='./train_logs/' + self.filename)
+
         bestloss = 1e6
         loss = 1e6
         converging = False
@@ -152,20 +157,36 @@ class vaeRunner(nn.Module):
         for epoch in range(1, self.config.epochs + 1):
             self.model.train()
             beta = self.beta_sch.getBeta(epoch, prints=False)
-            loss, MSE, KLD, elapsed, collapsed = utils.train.train_epoch(self.model,
-                                                                         self.train_dl,
-                                                                         self.opt,
-                                                                         beta,
-                                                                         self.device)
+            loss, MSE, KLD, elapsed, collapsed = utils.train.train_epoch(model=self.model,
+                                                                         data=self.train_dl,
+                                                                         optimizer=self.opt,
+                                                                         beta=beta,
+                                                                         device=self.device)
             self.model.eval()
-            loss_test, MSE_test, KLD_test, elapsed_test = utils.train.test_epoch(self.model,
-                                                                                 self.val_dl,
-                                                                                 beta,
-                                                                                 self.device)
+            loss_test, MSE_test, KLD_test, elapsed_test = utils.train.test_epoch(model=self.model,
+                                                                                 data=self.val_dl,
+                                                                                 beta=beta,
+                                                                                 device=self.device)
 
             self.opt_sch.step()
 
-            utils.train.printProgress(epoch, self.config.epochs, loss, loss_test, MSE, KLD, elapsed, elapsed_test, collapsed)
+            utils.train.printProgress(epoch=epoch,
+                                      epochs=self.config.epochs,
+                                      loss=loss,
+                                      loss_test=loss_test,
+                                      MSE=MSE,
+                                      KLD=KLD,
+                                      elapsed=elapsed,
+                                      elapsed_test=elapsed_test,
+                                      collapsed=collapsed)
+
+            logger.add_scalar('General loss/Total', loss, epoch)
+            logger.add_scalar('General loss/MSE', MSE, epoch)
+            logger.add_scalar('General loss/KLD', KLD, epoch)
+            logger.add_scalar('General loss/Total_test', loss_test, epoch)
+            logger.add_scalar('General loss/MSE_test', MSE_test, epoch)
+            logger.add_scalar('General loss/KLD_test', KLD_test, epoch)
+            logger.add_scalar('Optimizer/LR', self.opt_sch.get_last_lr()[0], epoch)
 
 
 

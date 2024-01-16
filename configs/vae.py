@@ -17,6 +17,8 @@ class VAE_config:
     beta = 0.001
     
     beta_init = 0.001
+
+    beta_warmup = 20
     
     n_test = 100
     
