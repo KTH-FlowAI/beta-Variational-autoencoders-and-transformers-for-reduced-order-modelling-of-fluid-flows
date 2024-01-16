@@ -2,6 +2,24 @@ import h5py
 import numpy as np
 
 def loadData(file, printer=False):
+    """
+    Read flow field dataset
+    
+    Args: 
+            file    :   (str) Path of database
+
+            printer :   (bool) print the summary of datasets
+    
+    Returns:
+
+            u_scaled:   (NumpyArray) The scaled data
+            
+            mean    :   (float) mean of data 
+            
+            std     :   (float) std of data 
+
+    """
+
     with h5py.File(file, 'r') as f:
         u_scaled = f['UV'][:]
         mean = f['mean'][:]
@@ -17,6 +35,40 @@ def loadData(file, printer=False):
         print('std: ', std)
 
     return u_scaled, mean, std
+
+def get_vae_DataLoader(d_train,d_val,device,batch_size):
+    """
+    make tensor data loader for training
+
+    Args:
+        d_train: (NumpyArray) Train DataSet 
+        
+        d_val  : (NumpyArray) Validation dataset
+
+        device  : (str) Device
+        
+        batch_size: (int) Batch size
+        
+
+    Return: 
+        train_dl, val_dl: The train and validation DataLoader
+    """
+    import torch 
+
+    if('cuda' in device):
+        train_dl = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_train).to(device), batch_size=batch_size,
+                                                shuffle=True, num_workers=0)
+        val_dl   = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_val).to(device), batch_size=batch_size,
+                                                shuffle=False, num_workers=0)
+
+    else:
+        train_dl = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_train), batch_size=batch_size,
+                                                shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
+        val_dl  = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_val), batch_size=batch_size,
+                                                shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
+    
+    return train_dl, val_dl
+
 
 def make_Sequence(cfg,data):
     """

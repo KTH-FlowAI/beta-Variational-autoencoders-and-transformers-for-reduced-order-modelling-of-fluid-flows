@@ -12,6 +12,7 @@ class easyAttn_config:
 
     time_proj   = 64 # The projection on time, which is used for new embedding stragtegy 
     next_step   = 1
+    
     if target == "VAE":
         nmode       = VAE_config.latent_dim  # Should be consistent as the modes
     elif target == "POD":
@@ -46,23 +47,3 @@ class easyAttn_config:
     else:
         patience  = 0 
 
-
-def Make_Transformer_Name(cfg):
-    """
-    A function to name the VAE checkpoint 
-
-    Args: 
-        cfg: A class of VAE model configuration
-    
-    Returns:
-        name: A string for Transformer model
-    """
-
-    case_name = f"{cfg.target}_" +\
-                f"{cfg.attn_type}Attn"+\
-                f"_{cfg.in_dim}in_{cfg.d_model}dmodel_{cfg.next_step}next_{cfg.nmode}dim"+\
-                f"_{cfg.embed}emb_{cfg.num_head}h_{cfg.num_block}nb_{cfg.proj_dim}ff"+\
-                f"_{cfg.act_proj}act_{cfg.out_act}outact"+\
-                f"_{cfg.Epoch}Epoch_{cfg.num_train}N_{cfg.early_stop}ES_{cfg.patience}P"
-    
-    return case_name

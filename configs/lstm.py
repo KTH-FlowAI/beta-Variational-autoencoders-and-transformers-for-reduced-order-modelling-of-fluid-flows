@@ -35,21 +35,3 @@ class lstm_config:
 
 
 
-def Make_LSTM_Name(cfg):
-    """
-    A function to name the VAE checkpoint 
-
-    Args: 
-        cfg: A class of VAE model configuration
-    
-    Returns:
-        name: A string for LSTM model
-    """
-    
-    case_name = f"LSTM"+\
-                f"_{cfg.in_dim}in_{cfg.d_model}dmodel_{cfg.next_step}next_{cfg.nmode}dim"+\
-                f"_{cfg.embed}emb_{cfg.hidden_size}hideen_{cfg.num_layer}nlayer_"+\
-                f"_{cfg.out_act}outact"+\
-                f"_{cfg.Epoch}Epoch_{cfg.num_train}N_{cfg.early_stop}ES_{cfg.patience}P"
-    
-    return case_name

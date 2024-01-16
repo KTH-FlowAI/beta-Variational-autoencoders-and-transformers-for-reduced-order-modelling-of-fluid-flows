@@ -120,3 +120,5 @@ def l2Norm_Error(Pred, Truth):
                             /(norm(Truth,axis=1))
     
     return error.mean()*100
+
+

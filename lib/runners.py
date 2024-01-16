@@ -1,31 +1,99 @@
 """
-A runner for the temporal-dynamic prediction in latent space 
+Runners for the VAE and temporal-dynamic prediction in latent space 
 @yuningw
 """
 
 import os 
 import time
+from pathlib import Path
 import h5py
 import numpy as np
 import torch 
 from torch          import nn 
-from utils.model    import get_predictors
+from utils.model    import get_predictors, get_vae
 from utils.train    import fit
-from utils.datas    import make_DataLoader, make_Sequence
+from utils.datas    import loadData, get_vae_DataLoader , make_DataLoader, make_Sequence
 from utils.pp       import make_Prediction, Sliding_Window_Error
 from utils.chaotic  import Intersection
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 data_path   = 'data/'
-
 model_path  = 'models/'; 
-if not os.path.exists(model_path): os.makedirs(model_path)
+res_path    = 'res/'
+fig_path    = 'figs/'
 
-res_path    = 'results/preds/'
-if not os.path.exists(res_path): os.makedirs(res_path)
+Path(data_path).mkdir(exist_ok=True)
+Path(model_path).mkdir(exist_ok=True)
+Path(res_path).mkdir(exist_ok=True)
+Path(fig_path).mkdir(exist_ok=True)
 
-fig_path    = 'results/figs/'
-if not os.path.exists(fig_path): os.makedirs(fig_path)
+
+class vaeRunner(nn.Module):
+    def __init__(self, device) -> None:
+        """
+        A runner for beta-VAE
+
+        Args:
+
+            device          :       (Str) The device going to use
+            
+        """
+        
+        from configs.vae import VAE_config as cfg 
+        from configs.nomenclature import Name_VAE
+        
+        super(vaeRunner,self).__init__()
+        print("#"*30)
+
+        self.config     = cfg
+        self.filename   = Name_VAE(self.config)
+        
+        self.device     = self.device
+
+        self.model      = get_vae(self.config.latent_dim)
+        
+        self.model.to(device)
+
+        print(f"INIT betaVAE, device: {device}")
+        print(f"Case Name:\n {self.filename}")
+
+    def get_data(self): 
+        """
+        
+        Generate the DataLoader for training 
+
+        """
+        
+        datafile = "data/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
+
+        try: 
+            u_scaled, mean, std = loadData(datafile)
+            u_scaled            = u_scaled[::self.config.delta_t]
+            n_total = u_scaled.shape[0]
+            n_train = n_total - self.config.n_test
+            print(f"INFO: Data Summary: N train: {n_train:d}," + \
+                f"N test: {self.config.n_test:d},"+\
+                f"N total {n_total:d}")
+        except: 
+            print(f"Error: Faild loading data")
+
+        self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:n_train],
+                                                d_val=u_scaled[n_train:],
+                                                device= self.device,
+                                                batch_size= self.config.batch_size)
+        print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
+                f"Num val batch = {len(self.val_dl)}")
+    
+    def complie(self):
+        """
+        
+        Compile the optimiser, schedulers and loss function for training
+
+
+        """
+
+        
+
 
 
 
@@ -49,24 +117,25 @@ class latentRunner(nn.Module):
         self.model, self.filename, self.config = get_predictors(name)
         self.NumPara = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         print(f"INFO: The model has been generated, num of parameter is {self.NumPara}")
-
+        print(f"Case Name:\n {self.filename}")
 
     def train(self):
         print("#"*30)
         print("INFO: Start Training ")
         self.get_data()
-        
         self.compile()
-        
         self.run()
-
+        
+        self.train_dl   = None
+        self.val_dl     = None
+        print(f"INFO: Training finished, cleaned the data loader")
+        print("#"*30)
 
     def get_data(self):
         """
         Get the latent space variable data for training and validation
         """ 
         try: 
-            # hdf5 = h5py.File("data/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5")
             hdf5 = h5py.File(data_path + "latent_data.h5py")
             data   = np.array(hdf5['vector'])
         except:
