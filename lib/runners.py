@@ -30,6 +30,7 @@ Path(data_path).mkdir(exist_ok=True)
 Path(model_path).mkdir(exist_ok=True)
 Path(res_path).mkdir(exist_ok=True)
 Path(fig_path).mkdir(exist_ok=True)
+Path(chekp_path).mkdir(exist_ok=True)
 
 
 class vaeRunner(nn.Module):
@@ -154,7 +155,6 @@ class vaeRunner(nn.Module):
 
         bestloss = 1e6
         loss = 1e6
-        converging = False
 
         for epoch in range(1, self.config.epochs + 1):
             self.model.train()
@@ -193,12 +193,12 @@ class vaeRunner(nn.Module):
             if (loss_test < bestloss and epoch > 100):
                 bestloss = loss_test
                 checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-                ckp_file = f'{chekp_path}{self.filename}_epoch_bestTest.pth.tar'
+                ckp_file = f'{chekp_path}/{self.filename}_epoch_bestTest.pth.tar'
                 save_checkpoint(state=checkpoint, path_name=ckp_file)
                 print(f'## Checkpoint. Epoch: {epoch}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
         checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-        ckp_file = f'{chekp_path}{self.filename}_epoch_final.pth.tar'
+        ckp_file = f'{chekp_path}/{self.filename}_epoch_final.pth.tar'
         save_checkpoint(state=checkpoint, path_name=ckp_file)
         print(f'Checkpoint. Final epoch, loss: {loss}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
