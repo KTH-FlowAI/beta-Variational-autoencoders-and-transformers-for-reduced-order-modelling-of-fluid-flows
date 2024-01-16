@@ -9,7 +9,9 @@ from pathlib import Path
 import h5py
 import numpy as np
 import torch 
-from torch          import nn 
+from torch          import nn
+
+import utils.train
 from utils.model    import get_predictors, get_vae
 from utils.train    import fit
 from utils.datas    import loadData, get_vae_DataLoader , make_DataLoader, make_Sequence
@@ -128,6 +130,10 @@ class vaeRunner(nn.Module):
                                             final_div_factor=self.config.lr/self.config.lr_end, 
                                             pct_start=0.2)
 
+        self.beta_sch = utils.train.betaScheduler(startvalue=self.config.beta_init,
+                                                  endvalue=self.config.beta,
+                                                  warmup=self.config.beta_warmup)
+
         print(f"INFO: Compiling Finished!")
 
 
@@ -139,6 +145,27 @@ class vaeRunner(nn.Module):
         Training beta-VAE
         
         """
+        bestloss = 1e6
+        loss = 1e6
+        converging = False
+
+        for epoch in range(1, self.config.epochs + 1):
+            self.model.train()
+            beta = self.beta_sch.getBeta(epoch, prints=False)
+            loss, MSE, KLD, elapsed, collapsed = utils.train.train_epoch(self.model,
+                                                                         self.train_dl,
+                                                                         self.opt,
+                                                                         beta,
+                                                                         self.device)
+            self.model.eval()
+            loss_test, MSE_test, KLD_test, elapsed_test = utils.train.test_epoch(self.model,
+                                                                                 self.val_dl,
+                                                                                 beta,
+                                                                                 self.device)
+
+            self.opt_sch.step()
+
+            utils.train.printProgress(epoch, self.config.epochs, loss, loss_test, MSE, KLD, elapsed, elapsed_test, collapsed)
 
 
 
