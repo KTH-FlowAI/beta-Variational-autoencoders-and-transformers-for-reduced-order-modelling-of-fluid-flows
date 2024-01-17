@@ -5,12 +5,13 @@ Initialisation and setup before running
 
 class pathsBib: 
     
-    data_path   = 'data/'
-    model_path  = 'models/'; 
-    res_path    = 'res/'
-    fig_path    = 'figs/'
-    log_path    = 'logs/'
-    chekp_path  =  model_path + 'checkpoints/'
+    data_path       = 'data/'
+    model_path      = 'models/'; 
+    res_path        = 'res/'
+    fig_path        = 'figs/'
+    log_path        = 'logs/'
+    chekp_path      =  model_path + 'checkpoints/'
+    pretrain_path   =  model_path + "pretrained/"
 
 #-------------------------------------------------
 def init_env(Re=40):
@@ -25,8 +26,13 @@ def init_env(Re=40):
         data_file   : (str)  File name
     
     """
-
+    from configs.vae import VAE_config
+    assert(Re == VAE_config.Re), print(f"ERROR: Please match the config of vae {VAE_config.Re}!")
+    
     is_init_path = init_path()
+    
+    datafile = None
+
     if is_init_path:
         is_acquired, datafile = acquire_data(Re)
     else: 
@@ -82,23 +88,23 @@ def acquire_data(Re=40):
     import os 
     import time
     is_acuqired = False
-
+    datfile     = None
     if Re == 40:
-        datafile = pathsBib.data_path + "Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
+        datfile = pathsBib.data_path + "Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
     else:
         print(f"Error: Data might be too large to download, please get it manually")
 
     try:
-        if not os.path.exists(datafile):
+        if not os.path.exists(datfile):
             try:
-                print(f"{datafile}")
+                print(f"{datfile}")
                 print(f"INFP: Not found, trying to download example dataset")
                 st = time.time()
                 urllib.request.urlretrieve('https://zenodo.org/records/10501216/files/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5?download=1', 
-                                        datafile)
+                                        datfile)
                 et = time.time()
                 ct = et - st 
-                print(f"File downloaded successfully to {datafile}, Time Cost: {ct:.2f}s")
+                print(f"File downloaded successfully to {datfile}, Time Cost: {ct:.2f}s")
                 is_acuqired = True
             
             except Exception as e:
@@ -113,5 +119,5 @@ def acquire_data(Re=40):
 
     print("#"*30)
     
-    return is_acuqired, datafile
+    return is_acuqired, datfile
 

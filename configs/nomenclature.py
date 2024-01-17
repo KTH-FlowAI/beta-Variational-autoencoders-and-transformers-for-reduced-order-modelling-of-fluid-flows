@@ -16,13 +16,14 @@ def Name_VAE(cfg):
         name: A string for VAE name
     """
 
-    name =  f'smallerCNN_beta{cfg.beta}_' + \
+    name =  f"Re{cfg.Re}_" +\
+            f'smallerCNN_'+\
+            f'beta{cfg.beta}_' + \
             f'wDecay{cfg.decWdecay}_'+\
             f'dim{cfg.latent_dim}_'+\
             f'lr{cfg.lr}OneCycleLR{cfg.lr_end}_'+\
             f'bs{cfg.batch_size}_'+\
-            f'epochs{cfg.epochs}_'+\
-            f'nt{cfg.n_test}'
+            f'epochs{cfg.epochs}'
     return name
 
 

@@ -19,6 +19,12 @@ from lib.datas      import *
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
+
+
+####################################################
+### RUNNER for beta-VAE
+####################################################
+
 class vaeRunner(nn.Module):
     def __init__(self, device, datafile) -> None:
         """
@@ -50,6 +56,32 @@ class vaeRunner(nn.Module):
 
         print(f"INIT betaVAE, device: {device}")
         print(f"Case Name:\n {self.filename}")
+#-------------------------------------------------
+    def run(self):
+        self.train()
+        self.infer()
+
+#-------------------------------------------------
+    def train(self):
+        print("#"*30)
+        print("INFO: Start Training ")
+        self.get_data()
+        self.compile()
+        self.fit()
+        self.train_dl   = None
+        self.val_dl     = None
+        print(f"INFO: Training finished, cleaned the data loader")
+        print("#"*30)
+
+#-------------------------------------------------
+    def infer(self):
+        print("#"*30)
+        print("INFO: Start post-processing")
+        self.load_pretrain_model()
+
+
+        print(f"INFO: Inference ended!")
+        print("#"*30)
 
 
 #-------------------------------------------------
@@ -66,7 +98,8 @@ class vaeRunner(nn.Module):
         u_scaled, self.mean, self.std = loadData(self.datafile)
         ## Down-Sample the data with frequency
         ## since we already down-sampled it for database, we skip it here
-        u_scaled            = u_scaled[::1]
+        
+        u_scaled            = u_scaled[::self.config.downsample]
         n_total             = u_scaled.shape[0]
         self.n_train             = n_total - self.config.n_test
         print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
@@ -119,7 +152,7 @@ class vaeRunner(nn.Module):
 
 #-------------------------------------------------
 
-    def run(self):
+    def fit(self):
         """
 
         Training beta-VAE
@@ -128,7 +161,7 @@ class vaeRunner(nn.Module):
         from torch.utils.tensorboard import SummaryWriter
 
         print(f"Training {self.filename}")
-        logger = SummaryWriter(log_dir=log_path + self.filename)
+        logger = SummaryWriter(log_dir=pathsBib.log_path + self.filename)
 
         bestloss = 1e6
         loss = 1e6
@@ -180,6 +213,31 @@ class vaeRunner(nn.Module):
         print(f'Checkpoint. Final epoch, loss: {loss}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
 
+#-------------------------------------------------
+
+    def load_pretrain_model(self):
+        """
+
+        Load the pretrained model for beta VAE
+
+        """
+        
+        try:
+            ckpoint = torch.load(pathsBib.pretrain_path + self.filename + ".pth.tar", map_location= self.device)
+            
+        except:
+            print("ERROR: Model NOT found!")
+            exit()
+        stat_dict   = ckpoint['state_dict']
+        self.model.load_state_dict(stat_dict)
+        print(f'INFO: the state dict has been loaded!')
+        print(self.model.eval)
+
+
+
+####################################################
+### RUNNER for Temporal-dynamics Prediction
+####################################################
 
 
 class latentRunner(nn.Module): 
@@ -212,11 +270,19 @@ class latentRunner(nn.Module):
         print("INFO: Start Training ")
         self.get_data()
         self.compile()
-        self.run()
-        
+        self.fit()
         self.train_dl   = None
         self.val_dl     = None
         print(f"INFO: Training finished, cleaned the data loader")
+        print("#"*30)
+
+#-------------------------------------------------
+    def infer(self, if_window, if_pmap):
+        print("#"*30)
+        print("INFO: Start post-processing")
+        self.load_pretrain_model()
+        self.post_process(if_window,if_pmap)
+        print(f"INFO: Inference ended!")
         print("#"*30)
 
 #-------------------------------------------------
@@ -227,7 +293,7 @@ class latentRunner(nn.Module):
         Get the latent space variable data for training and validation
         """ 
         try: 
-            hdf5 = h5py.File(data_path + "latent_data.h5py")
+            hdf5 = h5py.File(pathsBib.data_path + "latent_data.h5py")
             data   = np.array(hdf5['vector'])
         except:
             print(f"Error: DataBase not found, please check path or keys")
@@ -254,13 +320,13 @@ class latentRunner(nn.Module):
 
 #-------------------------------------------------
 
-    def run(self): 
+    def fit(self): 
         """
         Training Model, we use the fit() function 
         """
 
         s_t = time.time()
-        history = fit(      self.device, 
+        history = fitting(  self.device, 
                             self.model,
                             self.train_dl, 
                             self.loss_fn,
@@ -279,7 +345,7 @@ class latentRunner(nn.Module):
                         "history":history,
                         "time":cost_time}
         
-        torch.save(check_point,model_path + self.filename+".pt")
+        torch.save(check_point,pathsBib.model_path + self.filename+".pt")
         print(f"INFO: The checkpoints has been saved!")
 
 #-------------------------------------------------
@@ -287,7 +353,7 @@ class latentRunner(nn.Module):
 
     def load_pretrain_model(self):
         try:
-            ckpoint = torch.load(model_path + self.filename + ".pt", map_location= self.device)
+            ckpoint = torch.load(pathsBib.model_path + self.filename + ".pt", map_location= self.device)
         except:
             print("ERROR: Model NOT found!")
             exit()
@@ -309,8 +375,7 @@ class latentRunner(nn.Module):
         """ 
 
         try: 
-            # hdf5 = h5py.File("data/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5")
-            hdf5        = h5py.File(data_path + "latent_data.h5py")
+            hdf5        = h5py.File(pathsBib.data_path + "latent_data.h5py")
             test_data   = np.array(hdf5['vector_test'])
         except:
             print(f"Error: DataBase not found, please check path or keys")
@@ -345,7 +410,7 @@ class latentRunner(nn.Module):
         
         
         np.savez_compressed(
-                            res_path + self.filename + ".npz",
+                            pathsBib.res_path + self.filename + ".npz",
                             p = Preds, 
                             g = test_data,
                             e = window_error,

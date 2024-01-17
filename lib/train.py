@@ -144,7 +144,7 @@ class EarlyStopper:
 
 
 
-def fit(device,
+def fitting(device,
         model,
         dl,
         loss_fn,

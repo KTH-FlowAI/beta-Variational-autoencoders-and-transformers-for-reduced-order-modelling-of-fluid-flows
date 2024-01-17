@@ -13,6 +13,7 @@ import numpy as np
 ##############################################
 # Functions used for training beta-VAE
 ################################################
+"""
 def train_vae(
             model,
             optimizer,
@@ -20,9 +21,7 @@ def train_vae(
             betaSch,
             
             ):
-    """
-    Function to train the 
-    """
+    
     bestloss = 1e6
     loss = 1e6
     converging = False
@@ -68,7 +67,7 @@ def train_vae(
 
 
 
-
+"""
 
 class betaScheduler:
     """Schedule beta, linear growth to max value"""
