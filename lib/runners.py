@@ -11,30 +11,16 @@ import numpy as np
 import torch 
 from torch          import nn
 
-import utils.train
-from utils.model    import get_predictors, get_vae, save_checkpoint, load_checkpoint
-from utils.train    import fit
-from utils.datas    import loadData, get_vae_DataLoader , make_DataLoader, make_Sequence
-from utils.pp       import make_Prediction, Sliding_Window_Error
-from utils.chaotic  import Intersection
+from lib.init       import pathsBib
+from lib.train      import * 
+from lib.model      import * 
+from lib.pp_time    import * 
+from lib.datas      import * 
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-data_path   = 'data/'
-model_path  = 'models/'; 
-res_path    = 'res/'
-fig_path    = 'figs/'
-log_path    = 'train_logs/'
-chekp_path  = 'checkpoints'
-
-Path(data_path).mkdir(exist_ok=True)
-Path(model_path).mkdir(exist_ok=True)
-Path(res_path).mkdir(exist_ok=True)
-Path(fig_path).mkdir(exist_ok=True)
-Path(chekp_path).mkdir(exist_ok=True)
-
 
 class vaeRunner(nn.Module):
-    def __init__(self, device) -> None:
+    def __init__(self, device, datafile) -> None:
         """
         A runner for beta-VAE
 
@@ -42,6 +28,7 @@ class vaeRunner(nn.Module):
 
             device          :       (Str) The device going to use
             
+            datafile        :       (Str) Path of training data
         """
         
         from configs.vae import VAE_config as cfg 
@@ -53,6 +40,8 @@ class vaeRunner(nn.Module):
         self.config     = cfg
         self.filename   = Name_VAE(self.config)
         
+        self.datafile   = datafile
+
         self.device     = device
 
         self.model      = get_vae(self.config.latent_dim)
@@ -72,30 +61,18 @@ class vaeRunner(nn.Module):
 
         """
         
-        datafile = data_path + "Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
-
-        try:
-            if not os.path.exists(datafile):
-                import urllib.request
-                try:
-                    print(f"{datafile}")
-                    print("Not found, trying to download example dataset")
-                    urllib.request.urlretrieve('https://zenodo.org/records/10501216/files/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5?download=1', datafile)
-                    print(f"File downloaded successfully to {datafile}")
-                except Exception as e:
-                    print(f"Failed to download sample dataset. Error: {e}")
-            u_scaled, self.mean, self.std = loadData(datafile)
-            ## Down-Sample the data with frequency
-            ## since we already down-sampled it for database, we skip it here
-            u_scaled            = u_scaled[::1]
-            n_total             = u_scaled.shape[0]
-            self.n_train             = n_total - self.config.n_test
-            print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
+        # datafile = 
+        
+        u_scaled, self.mean, self.std = loadData(self.datafile)
+        ## Down-Sample the data with frequency
+        ## since we already down-sampled it for database, we skip it here
+        u_scaled            = u_scaled[::1]
+        n_total             = u_scaled.shape[0]
+        self.n_train             = n_total - self.config.n_test
+        print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
-        except: 
-            print(f"Error: Failed loading data")
-
+        
         self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:self.n_train],
                                                 d_val=u_scaled[self.n_train:],
                                                 device= self.device,
@@ -133,9 +110,9 @@ class vaeRunner(nn.Module):
                                             final_div_factor=self.config.lr/self.config.lr_end, 
                                             pct_start=0.2)
 
-        self.beta_sch = utils.train.betaScheduler(startvalue=self.config.beta_init,
-                                                  endvalue=self.config.beta,
-                                                  warmup=self.config.beta_warmup)
+        self.beta_sch = betaScheduler(  startvalue =self.config.beta_init,
+                                        endvalue      =self.config.beta,
+                                        warmup        =self.config.beta_warmup)
 
         print(f"INFO: Compiling Finished!")
 
@@ -159,28 +136,28 @@ class vaeRunner(nn.Module):
         for epoch in range(1, self.config.epochs + 1):
             self.model.train()
             beta = self.beta_sch.getBeta(epoch, prints=False)
-            loss, MSE, KLD, elapsed, collapsed = utils.train.train_epoch(model=self.model,
-                                                                         data=self.train_dl,
-                                                                         optimizer=self.opt,
-                                                                         beta=beta,
-                                                                         device=self.device)
+            loss, MSE, KLD, elapsed, collapsed = train_epoch(model=self.model,
+                                                                        data=self.train_dl,
+                                                                        optimizer=self.opt,
+                                                                        beta=beta,
+                                                                        device=self.device)
             self.model.eval()
-            loss_test, MSE_test, KLD_test, elapsed_test = utils.train.test_epoch(model=self.model,
-                                                                                 data=self.val_dl,
-                                                                                 beta=beta,
-                                                                                 device=self.device)
+            loss_test, MSE_test, KLD_test, elapsed_test = test_epoch(model=self.model,
+                                                                                data=self.val_dl,
+                                                                                beta=beta,
+                                                                                device=self.device)
 
             self.opt_sch.step()
 
-            utils.train.printProgress(epoch=epoch,
-                                      epochs=self.config.epochs,
-                                      loss=loss,
-                                      loss_test=loss_test,
-                                      MSE=MSE,
-                                      KLD=KLD,
-                                      elapsed=elapsed,
-                                      elapsed_test=elapsed_test,
-                                      collapsed=collapsed)
+            printProgress(epoch=epoch,
+                                    epochs=self.config.epochs,
+                                    loss=loss,
+                                    loss_test=loss_test,
+                                    MSE=MSE,
+                                    KLD=KLD,
+                                    elapsed=elapsed,
+                                    elapsed_test=elapsed_test,
+                                    collapsed=collapsed)
 
             logger.add_scalar('General loss/Total', loss, epoch)
             logger.add_scalar('General loss/MSE', MSE, epoch)
@@ -193,12 +170,12 @@ class vaeRunner(nn.Module):
             if (loss_test < bestloss and epoch > 100):
                 bestloss = loss_test
                 checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-                ckp_file = f'{chekp_path}/{self.filename}_epoch_bestTest.pth.tar'
+                ckp_file = f'{pathsBib.chekp_path}/{self.filename}_epoch_bestTest.pth.tar'
                 save_checkpoint(state=checkpoint, path_name=ckp_file)
                 print(f'## Checkpoint. Epoch: {epoch}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
         checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-        ckp_file = f'{chekp_path}/{self.filename}_epoch_final.pth.tar'
+        ckp_file = f'{pathsBib.chekp_path}/{self.filename}_epoch_final.pth.tar'
         save_checkpoint(state=checkpoint, path_name=ckp_file)
         print(f'Checkpoint. Final epoch, loss: {loss}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
