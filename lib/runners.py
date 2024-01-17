@@ -24,7 +24,7 @@ model_path  = 'models/';
 res_path    = 'res/'
 fig_path    = 'figs/'
 log_path    = 'train_logs/'
-chekp_path  = 'checkpoints'
+chekp_path  =  model_path + 'checkpoints'
 
 Path(data_path).mkdir(exist_ok=True)
 Path(model_path).mkdir(exist_ok=True)
@@ -134,8 +134,8 @@ class vaeRunner(nn.Module):
                                             pct_start=0.2)
 
         self.beta_sch = utils.train.betaScheduler(startvalue=self.config.beta_init,
-                                                  endvalue=self.config.beta,
-                                                  warmup=self.config.beta_warmup)
+                                                endvalue=self.config.beta,
+                                                warmup=self.config.beta_warmup)
 
         print(f"INFO: Compiling Finished!")
 
@@ -160,27 +160,27 @@ class vaeRunner(nn.Module):
             self.model.train()
             beta = self.beta_sch.getBeta(epoch, prints=False)
             loss, MSE, KLD, elapsed, collapsed = utils.train.train_epoch(model=self.model,
-                                                                         data=self.train_dl,
-                                                                         optimizer=self.opt,
-                                                                         beta=beta,
-                                                                         device=self.device)
+                                                                        data=self.train_dl,
+                                                                        optimizer=self.opt,
+                                                                        beta=beta,
+                                                                        device=self.device)
             self.model.eval()
             loss_test, MSE_test, KLD_test, elapsed_test = utils.train.test_epoch(model=self.model,
-                                                                                 data=self.val_dl,
-                                                                                 beta=beta,
-                                                                                 device=self.device)
+                                                                                data=self.val_dl,
+                                                                                beta=beta,
+                                                                                device=self.device)
 
             self.opt_sch.step()
 
             utils.train.printProgress(epoch=epoch,
-                                      epochs=self.config.epochs,
-                                      loss=loss,
-                                      loss_test=loss_test,
-                                      MSE=MSE,
-                                      KLD=KLD,
-                                      elapsed=elapsed,
-                                      elapsed_test=elapsed_test,
-                                      collapsed=collapsed)
+                                    epochs=self.config.epochs,
+                                    loss=loss,
+                                    loss_test=loss_test,
+                                    MSE=MSE,
+                                    KLD=KLD,
+                                    elapsed=elapsed,
+                                    elapsed_test=elapsed_test,
+                                    collapsed=collapsed)
 
             logger.add_scalar('General loss/Total', loss, epoch)
             logger.add_scalar('General loss/MSE', MSE, epoch)
