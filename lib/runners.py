@@ -130,7 +130,7 @@ class vaeRunner(nn.Module):
         Training beta-VAE
         
         """
-
+    
 
 
 
