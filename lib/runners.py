@@ -15,6 +15,7 @@ from lib.init       import pathsBib
 from lib.train      import * 
 from lib.model      import * 
 from lib.pp_time    import * 
+from lib.pp_space   import spatial_Mode
 from lib.datas      import * 
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
@@ -83,7 +84,7 @@ class vaeRunner(nn.Module):
         
         self.get_test_data()
         print("INFO: test data has been loaded!")
-        
+        self.post_process()
 
         print(f"INFO: Inference ended!")
         print("#"*30)
@@ -119,33 +120,6 @@ class vaeRunner(nn.Module):
                 f"Num val batch = {len(self.val_dl)}")
         
 
-#-------------------------------------------------
-
-    def get_test_data(self):
-        """
-        
-        Generate the DataLoder for test 
-
-        """
-        from torch.utils.data import DataLoader
-        
-        u_scaled, self.mean, self.std = loadData(self.datafile)
-        
-        u_scaled            = u_scaled[::self.config.downsample]
-        n_total             = u_scaled.shape[0]
-        self.n_train        = n_total - self.config.n_test
-        
-        print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
-                f"N test: {self.config.n_test:d},"+\
-                f"N total {n_total:d}")
-        
-        self.test_dl        = DataLoader(torch.from_numpy(u_scaled[self.n_train:]), 
-                                        batch_size=1,
-                                        shuffle=False, 
-                                        pin_memory=True, 
-                                        num_workers=2)
-        print(f"INFO: Dataloader generated, Num Test batch = {len(self.test_dl)}")
-        
 
 
 #-------------------------------------------------
@@ -279,6 +253,42 @@ class vaeRunner(nn.Module):
         self.model.load_state_dict(stat_dict)
         print(f'INFO: the state dict has been loaded!')
 
+#-------------------------------------------------
+
+    def get_test_data(self):
+        """
+        
+        Generate the DataLoder for test 
+
+        """
+        from torch.utils.data import DataLoader
+        
+        u_scaled, self.mean, self.std = loadData(self.datafile)
+        
+        u_scaled            = u_scaled[::self.config.downsample]
+        n_total             = u_scaled.shape[0]
+        self.n_train        = n_total - self.config.n_test
+        
+        print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
+                f"N test: {self.config.n_test:d},"+\
+                f"N total {n_total:d}")
+        
+        self.train_d, self.test_d = u_scaled[:self.n_train] ,u_scaled[self.n_train:]
+
+        self.train_dl        = DataLoader(torch.from_numpy(self.train_d), 
+                                        batch_size=1,
+                                        shuffle=False, 
+                                        pin_memory=True, 
+                                        num_workers=2)
+        self.test_dl       = DataLoader(torch.from_numpy(self.test_d), 
+                                        batch_size=1,
+                                        shuffle=False, 
+                                        pin_memory=True, 
+                                        num_workers=2)
+        
+        print(f"INFO: Dataloader generated, Num Test batch = {len(self.test_dl)}")
+        
+
 
 #-------------------------------------------------
     def post_process(self):
@@ -290,10 +300,25 @@ class vaeRunner(nn.Module):
         """
 
         assert (self.test_dl != None), print("ERROR: NOT able to do post-processing without test data!")
-        
-        
 
-
+        fname = pathsBib.res_path + "modes_" + self.filename
+        
+        if_save_spatial = spatial_Mode(fname,
+                                    model=self.model,latent_dim=self.config.latent_dim,
+                                    train_data=self.train_d,test_data=self.test_d,
+                                    dataset_train=self.train_dl,dataset_test=self.test_dl,
+                                    mean = self.mean, std = self.std,
+                                    device= self.device,
+                                    if_order= True,
+                                    if_nlmode= True,
+                                    if_Ecumt= True,
+                                    if_Ek_t= True
+                                    )
+        if if_save_spatial: 
+            print(f"INFO: Spatial Modes finished!")
+        else:
+            print(f'ERROR: Spatial modes has not saved!')
+        
 
 ####################################################
 ### RUNNER for Temporal-dynamics Prediction

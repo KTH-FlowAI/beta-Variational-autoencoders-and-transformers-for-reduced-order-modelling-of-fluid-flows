@@ -77,48 +77,33 @@ def spatial_Mode(   fname,
     
     print(f"INFO: Start spatial mode generating")
     if if_order:
-        try:
-            order, Ecum = get_order(get_order(model, latent_dim, 
+        order, Ecum = get_order(model, latent_dim, 
                                         train_data, 
                                         dataset_train, 
-                                        std, device))
-            print(f"INFO: RANKING DONE")
-        except:
-            print("ERROR: Ranking FAILD, please check")
-            order = None
-            Ecum  = None
-
+                                        std, device)
+        print(f"INFO: RANKING DONE")        
     else:
         order = None
         Ecum  = None
+    
 
     if if_nlmode:
-        try: 
-            NLvalues, NLmodes = getNLmodes(model, order[0], latent_dim, device)
-            print("INFO: Non-linear mode generated")
-        except: 
-            print("ERROR: NLModes FAILD")
-            NLmodes = None
-            NLvalues = None
+        NLvalues, NLmodes = getNLmodes(model, order[0], latent_dim, device)
+        print("INFO: Non-linear mode generated")
     else:
         NLmodes = None
         NLvalues = None
     
     if if_Ecumt: 
-        try: 
-            Ecum_test = get_EcumTest(model, latent_dim, test_data, dataset_test, std, device, order)
-        except:
-            print('ERROR: Ecum_test FAILD')
-            Ecum_test = None
+        
+        Ecum_test = get_EcumTest(model, latent_dim, test_data, dataset_test, std, device, order)
+        print('INFO: Test E_cum generated')
     else: 
         Ecum_test = None
     
     if if_Ek_t: 
-        try:
-            Ek_t = get_Ek_t(model=model, data=test_data, device=device)
-        except: 
-            print(f'ERROR: get_Ek_t FAILD')
-            Ek_t = None
+        Ek_t = get_Ek_t(model=model, data=test_data, device=device)
+
     else:
         Ek_t = None
     
@@ -315,7 +300,7 @@ def get_spatial_modes(model, latent_dim, device):
     modes = np.zeros((latent_dim, zero_output.shape[1], zero_output.shape[2], zero_output.shape[3]))
 
     for mode in range(latent_dim):
-        modes[mode, :, :, :] = calcmode(model, latent_dim, mode)
+        modes[mode, :, :, :] = calcmode(model, latent_dim, mode, device)
 
     return zero_output, modes
 
@@ -613,33 +598,21 @@ def createModesFile(fname,
     if_save = False
 
     print(f"Start post-processing")
+
+
+    means_train, stds_train  =   encode(model, dataset_train, device)
+    print('INFO: Latent Variable Train Generated')
+    means_test, stds_test    =   encode(model, dataset_test, device)
+    print('INFO: Latent Variable Test Generated')
     
-    try:
-        means_train, stds_train  =   encode(model, dataset_train, device)
-    except:
-        print(f"ERROR: Encoding on training data FAILD")
-        means_train = None
-        stds_train = None
-    
-    try:
-        means_test, stds_test    =   encode(model, dataset_test, device)
-    except: 
-        print(f"ERROR: Encoding on test data FAILD")
-        means_test = None
-        stds_test = None
-        
-    try: 
-        zero_output, modes = get_spatial_modes(model, latent_dim, mean, std, device)
-    except:
-        print(f"ERROR: Unit Vector space mode FAILD")
-        zero_output  = None
-        modes        = None
+    zero_output, modes = get_spatial_modes(model, latent_dim, device)
+    print('INFO: Spatial mode generated')
 
     if order is None:
         order = np.arange(latent_dim)
 
-    try:
-        with h5py.File(fname + ".hdf5", 'w') as f:
+
+    with h5py.File(fname + ".hdf5", 'w') as f:
 
             # Mean velocity of flow data 
             f.create_dataset('mean', data=mean)
@@ -673,11 +646,9 @@ def createModesFile(fname,
             #Assessments: E_k for each single snapshots 
             f.create_dataset('Ek_t', data=Ek_t)
 
-        f.close()
-        if_save = True
+    f.close()
+    if_save = True
 
-    except:
-        print('ERROR: Save DATA FAILD')
     
     print(f"INFO: Post-processing results has been saved as dataset: {fname}")
 
