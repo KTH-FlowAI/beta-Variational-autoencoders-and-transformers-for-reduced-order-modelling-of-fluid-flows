@@ -499,12 +499,12 @@ class latentRunner(nn.Module):
 
             if_pmap     :   (bool) If compute the Poincare Map 
         """ 
-
+        
         try: 
             hdf5        = h5py.File(pathsBib.data_path + "latent_data.h5py")
             test_data   = np.array(hdf5['vector_test'])
         except:
-            print(f"Error: DataBase not found, please check path or keys")
+            print(f"Error: DataBase not found, please check path or keys or try run the vae first")
 
         print(f"INFO: Test data loaded, SIZE = {test_data.shape}")
         Preds = make_Prediction(test_data   = test_data, 

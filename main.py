@@ -17,10 +17,11 @@ device = ('cuda' if torch.cuda.is_available() else "cpu")
 
 if __name__ == "__main__":
 
-    ## Beta-VAE 
-    
+    ## Env INIT
     datafile = init.init_env(args.re)
 
+
+    ## Beta-VAE 
     bvae   = vaeRunner(device,datafile)
     if args.m == 'train':
         bvae.train()
@@ -30,16 +31,12 @@ if __name__ == "__main__":
         bvae.run()
 
 
-    # bvae.get_data()
-    # bvae.compile()
-    # bvae.run()
+    # Time-series prediction runner 
 
-    ## Time-series prediction runner 
-
-    # lruner = latentRunner(args.nn,device)
-    # if args.m == 'train':
-    #     lruner.train()
-    # elif args.m == 'test':
-    #     lruner.infer(args.t)
-    # elif args.m == 'run':
-    #     lruner.run()
+    lruner = latentRunner(args.nn,device)
+    if args.m == 'train':
+        lruner.train()
+    elif args.m == 'test':
+        lruner.infer(args.t)
+    elif args.m == 'run':
+        lruner.run()

@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import h5py
-
+from lib.init import pathsBib
 """
 Post-processing and analysis algorithm for beta-VAE in latent space and physic space
 
@@ -647,6 +647,15 @@ def createModesFile(fname,
             f.create_dataset('Ek_t', data=Ek_t)
 
     f.close()
+
+    # Extra file for time-series prediction.
+    with h5py.File(pathsBib.data_path + 'latent_data' + ".h5py", 'w') as f:
+            # mu
+            f.create_dataset('vector', data=means_train)
+            f.create_dataset('vector_test', data=means_test)
+    f.close()
+
+    
     if_save = True
 
     
