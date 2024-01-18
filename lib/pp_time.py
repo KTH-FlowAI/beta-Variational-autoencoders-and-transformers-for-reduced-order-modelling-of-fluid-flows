@@ -6,6 +6,7 @@ Post-processing and evaluation for time series prediction
 # Assessment of temporal dynamic prediction 
 ####################################
 
+#--------------------------------------------------------
 def make_Prediction(test_data, model,
                     device, in_dim, next_step):
     """
@@ -47,7 +48,7 @@ def make_Prediction(test_data, model,
 
     return Preds
 
-
+#--------------------------------------------------------
 def Sliding_Window_Error(test_data,
                         model, device,
                         in_dim,window = 5):
@@ -100,7 +101,7 @@ def Sliding_Window_Error(test_data,
 
     return error_l2
 
-
+#--------------------------------------------------------
 def l2Norm_Error(Pred, Truth):
     """
     Compute the l2-norm proportional error for the prediction of temporal evolution

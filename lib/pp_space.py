@@ -5,11 +5,132 @@ import h5py
 """
 Post-processing and analysis algorithm for beta-VAE in latent space and physic space
 
-creator:    @alsora
-editting:   @yuningw
+author :    @alsora
+editing:   @yuningw
 """
+################################
+### Main programme for spatial analysis
+###############################
+def spatial_Mode(   fname,
+                    model, 
+                    latent_dim, 
+                    train_data,
+                    test_data,
+                    dataset_train,
+                    dataset_test,
+                    mean, std, 
+                    device,
+                    if_order    = True,
+                    if_nlmode   = True,
+                    if_Ecumt    = True,
+                    if_Ek_t     = True,
 
+                ): 
+    """
+    The main function for spatial mode analysis and generate the dataset 
+        
+    Args:
 
+        fname           :   (str) The file name
+
+        latent_dim      :   (int) The latent dimension 
+
+        train_data      :   (NumpyArray) Dataset for training
+        
+        test_data       :   (NumpyArray) Dataset for test
+
+        dataset_train   :   (dataloader) DataLoader for training data
+        
+        dataset_test    :   (dataloader) DataLoader for test data
+
+        mean            :   (NumpyArray) The mean of flow database
+        
+        std             :   (NumpyArray) The std of flow database
+
+        device          :   (str) The device for the computation
+    
+        order           : (NumpyArray) A array which contains the ranking results
+
+        Ecum            : (NumpyArray) accumlative Energy obtained for each mode
+    
+        Ecum_test       : (NumpyArray) accumlative Energy obtained for each mode
+
+        NLvalues        : (NumpyArray) The used range of value 
+
+        NLmodes         : (NumpyArray) The non-linear spatial mode
+
+        Ek_t            : (List) A list of enery of each snapshot in dataset
+
+        if_order        : (bool) IF ranking the mode
+
+        if_nlmode       : (bool) IF generate non-linear mode
+
+        if_Ecumt        : (bool) IF compute accumulative energy 
+        
+        if_Ek_t         : (bool) IF compute evolution of energy 
+    
+    Returns: 
+
+        if_save         : (bool) If successfully save file
+
+    """
+    
+    print(f"INFO: Start spatial mode generating")
+    if if_order:
+        try:
+            order, Ecum = get_order(get_order(model, latent_dim, 
+                                        train_data, 
+                                        dataset_train, 
+                                        std, device))
+            print(f"INFO: RANKING DONE")
+        except:
+            print("ERROR: Ranking FAILD, please check")
+            order = None
+            Ecum  = None
+
+    else:
+        order = None
+        Ecum  = None
+
+    if if_nlmode:
+        try: 
+            NLvalues, NLmodes = getNLmodes(model, order[0], latent_dim, device)
+            print("INFO: Non-linear mode generated")
+        except: 
+            print("ERROR: NLModes FAILD")
+            NLmodes = None
+            NLvalues = None
+    else:
+        NLmodes = None
+        NLvalues = None
+    
+    if if_Ecumt: 
+        try: 
+            Ecum_test = get_EcumTest(model, latent_dim, test_data, dataset_test, std, device, order)
+        except:
+            print('ERROR: Ecum_test FAILD')
+            Ecum_test = None
+    else: 
+        Ecum_test = None
+    
+    if if_Ek_t: 
+        try:
+            Ek_t = get_Ek_t(model=model, data=test_data, device=device)
+        except: 
+            print(f'ERROR: get_Ek_t FAILD')
+            Ek_t = None
+    else:
+        Ek_t = None
+    
+    is_save = createModesFile(fname, model, latent_dim, 
+                            dataset_train, dataset_test,
+                            mean, std, device,
+                            order, Ecum, Ecum_test,
+                            NLvalues, NLmodes,Ek_t)
+    
+    if is_save: print("INFO: Successfuly DONE!")
+
+    return is_save
 
 ################################
 ### Basic function for using VAE
@@ -310,68 +431,9 @@ def get_order(  model, latent_dim,
 
 
 
-
-
-
-
-
-
-
-
-
-
 ################################
-### I/O 
+### Assessment on Energy
 ###############################
-#--------------------------------------------------------
-def createModesFile(fname, model, latent_dim, dataset_train, dataset_test, mean, std, device, order, Ecum, Ecum_test, NLvalues, NLmodes, Ek_t):
-    # encode
-    means_train, stds_train  =   encode(model, dataset_train, device)
-    means_test, stds_test    =   encode(model, dataset_test, device)
-    print(f'Train: {means_train.shape}, test: {means_test.shape}')
-
-    zero_output, modes = get_spatial_modes(model, latent_dim, mean, std, device)
-
-    print(fname)
-
-    if order is None:
-        order = np.arange(latent_dim)
-
-    with h5py.File(fname, 'w') as f:
-        # mu
-        f.create_dataset('vector', data=means_train)
-        f.create_dataset('vector_test', data=means_test)
-        
-        # Sigma
-        f.create_dataset('stds_vector', data=stds_train)
-        f.create_dataset('stds_vector_test', data=stds_test)
-
-        # Spatial modes: Unit vector input 
-        f.create_dataset('modes', data=modes)
-        # Sptail modes: zeros vector input 
-        f.create_dataset('zero_output', data=zero_output)
-        
-        # Mean velocity of flow data 
-        f.create_dataset('mean', data=mean)
-        # std of flow data
-        f.create_dataset('std', data=std)
-
-        f.create_dataset('order', data=order)
-
-        
-        f.create_dataset('Ecum', data=Ecum)
-        f.create_dataset('Ecum_test', data=Ecum_test)
-        
-        f.create_dataset('NLvalues', data=NLvalues)
-        f.create_dataset('NLmodes', data=NLmodes)
-        
-        f.create_dataset('Ek_t', data=Ek_t)
-
-################################
-### Assessment of Energy
-###############################
-
-
 #--------------------------------------------------------
 def get_Ek(original, rec):
     
@@ -403,7 +465,20 @@ def get_Ek(original, rec):
 def get_Ek_t(model, data, device):
     """
     
-    Get the 
+    Get the Reconstructed energy for snapshots
+
+    Args:
+
+        model           : (torch.nn.Module) The beta-VAE model 
+        
+        data            : (NumpyArray) The flow database 
+
+        device          : (str) The device for the computation
+    
+    Returns:
+
+        Ek_t            : (List) A list of enery of each snapshot in dataset
+    
     
     """
 
@@ -437,6 +512,33 @@ def get_Ek_t(model, data, device):
 
 #--------------------------------------------------------
 def get_EcumTest(model, latent_dim, data, dataset, std, device, order):
+
+    """
+    Get the accumlative energy of test database 
+
+    Args:
+
+        model           : (torch.nn.Module) The beta-VAE model 
+
+        
+        latent_dim      : (int) The latent dimension we employed
+
+        data            : (NumpyArray) The flow database 
+
+        dataset         : (torch.Dataloader) The dataloader of the flow data
+
+        std             : (NumpyArray) The std of flow database
+
+        device          : (str) The device for the computation
+    
+        order           : (NumpyArray) A array which contains the ranking results
+
+    Returns:
+
+        Ecum            : (NumpyArray) accumlative Energy obtained for each mode
+    
+    """
+
     modes, _ = encode(model, dataset, device)
     print(modes.shape)
     u = data[:, :, :, :] * std[:, :, :, :]
@@ -451,3 +553,132 @@ def get_EcumTest(model, latent_dim, data, dataset, std, device, order):
         print(order[:i+1], Ecum[-1])
 
     return np.array(Ecum)
+
+
+
+
+
+################################
+### I/O 
+###############################
+#--------------------------------------------------------
+def createModesFile(fname, 
+                    model, 
+                    latent_dim, 
+                    dataset_train, dataset_test, 
+                    mean, std, 
+                    device, 
+                    order, 
+                    Ecum, Ecum_test, 
+                    NLvalues, NLmodes, 
+                    Ek_t):
+    """
+    
+    Function for integrating all the obtained results and save it as fname
+
+    Args: 
+
+        fname           :   (str) The file name
+
+        latent_dim      :   (int) The latent dimension 
+
+        dataset_train   :   (dataloader) DataLoader for training data
+        
+        dataset_test    :   (dataloader) DataLoader for test data
+
+        mean            :   (NumpyArray) The mean of flow database
+        
+        std             :   (NumpyArray) The std of flow database
+
+        device          :   (str) The device for the computation
+    
+        order           : (NumpyArray) A array which contains the ranking results
+
+        Ecum            : (NumpyArray) accumlative Energy obtained for each mode
+    
+        Ecum_test       : (NumpyArray) accumlative Energy obtained for each mode
+
+        NLvalues        : (NumpyArray) The used range of value 
+
+        NLmodes         : (NumpyArray) The non-linear spatial mode
+
+        Ek_t            : (List) A list of enery of each snapshot in dataset
+
+    Returns:
+
+        is_save         : (bool)
+
+    """
+    
+    if_save = False
+
+    print(f"Start post-processing")
+    
+    try:
+        means_train, stds_train  =   encode(model, dataset_train, device)
+    except:
+        print(f"ERROR: Encoding on training data FAILD")
+        means_train = None
+        stds_train = None
+    
+    try:
+        means_test, stds_test    =   encode(model, dataset_test, device)
+    except: 
+        print(f"ERROR: Encoding on test data FAILD")
+        means_test = None
+        stds_test = None
+        
+    try: 
+        zero_output, modes = get_spatial_modes(model, latent_dim, mean, std, device)
+    except:
+        print(f"ERROR: Unit Vector space mode FAILD")
+        zero_output  = None
+        modes        = None
+
+    if order is None:
+        order = np.arange(latent_dim)
+
+    try:
+        with h5py.File(fname + ".hdf5", 'w') as f:
+
+            # Mean velocity of flow data 
+            f.create_dataset('mean', data=mean)
+            # std of flow data
+            f.create_dataset('std', data=std)
+
+            # mu
+            f.create_dataset('vector', data=means_train)
+            f.create_dataset('vector_test', data=means_test)
+            
+            # Sigma
+            f.create_dataset('stds_vector', data=stds_train)
+            f.create_dataset('stds_vector_test', data=stds_test)
+
+            # Spatial modes: Unit vector input 
+            f.create_dataset('modes', data=modes)
+            # Sptail modes: zeros vector input 
+            f.create_dataset('zero_output', data=zero_output)
+            # Spatial modes: Non-linear value adopted 
+            f.create_dataset('NLvalues', data=NLvalues)
+            # Spatial modes: Non-linear modes
+            f.create_dataset('NLmodes', data=NLmodes)
+
+            # Ranking results for spatial modes
+            f.create_dataset('order', data=order)
+
+            #Assessments: Accumlative energy 
+            f.create_dataset('Ecum', data=Ecum)
+            #Assessments: Accumlative energy on test dataset
+            f.create_dataset('Ecum_test', data=Ecum_test)   
+            #Assessments: E_k for each single snapshots 
+            f.create_dataset('Ek_t', data=Ek_t)
+
+        f.close()
+        if_save = True
+
+    except:
+        print('ERROR: Save DATA FAILD')
+    
+    print(f"INFO: Post-processing results has been saved as dataset: {fname}")
+
+    return if_save

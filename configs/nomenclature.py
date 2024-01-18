@@ -24,6 +24,7 @@ def Name_VAE(cfg):
             f'lr{cfg.lr}OneCycleLR{cfg.lr_end}_'+\
             f'bs{cfg.batch_size}_'+\
             f'epochs{cfg.epochs}'
+    
     return name
 
 
