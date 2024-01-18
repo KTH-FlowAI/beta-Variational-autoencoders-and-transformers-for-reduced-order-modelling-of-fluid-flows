@@ -2,10 +2,9 @@ import torch
 import numpy as np
 import h5py
 
-import lib_data
-import lib_model
-import lib_figures
 
+
+#--------------------------------------------------------
 def encode(model, data, device):
     mean_list = []
     logvar_list = []
@@ -23,6 +22,7 @@ def encode(model, data, device):
     return means, logvars
 
 
+#--------------------------------------------------------
 def decode(model, data, device):
 
     dataset = torch.utils.data.DataLoader(dataset=torch.from_numpy(data), batch_size=512,
@@ -36,13 +36,41 @@ def decode(model, data, device):
     return np.concatenate(rec_list, axis=0)
 
 
-def get_spatial_modes(model, latent_dim, mean, std, device):
 
+#--------------------------------------------------------
+def get_spatial_modes(model, latent_dim, device):
+
+    """
+    Algorithm for optain the spatial mode from beta-VAE Decoder. 
+    For latent variable i, We use the unit vector v (where vi = 1) as the input to obtain the spatial mode for each latent variables
+    
+    Args:
+
+        model           : (torch.nn.Module) The beta-VAE model 
+
+        latent_dim      : (int) The latent dimension we employed
+
+        device          : (str) The device for the computation
+    
+    Returns:
+
+        
+        
+    """
     def calcmode(model, latent_dim, mode):
+        """
+        
+        Generate the non-linear mode with unit vector
+
+
+        
+        """
+        
         z_sample = np.zeros((1, latent_dim), dtype=np.float32)
         z_sample[:, mode] = 1
         with torch.no_grad():
             mode = model.decoder(torch.from_numpy(z_sample).to(device)).cpu().numpy()
+        
         return mode
 
     with torch.no_grad():
@@ -56,11 +84,25 @@ def get_spatial_modes(model, latent_dim, mean, std, device):
     return zero_output, modes
 
 
+
+#--------------------------------------------------------
 def get_Ek(original, rec):
-    """Calculate energy percentage reconstructed"""
-    #u_real = original[:, 0, :, :]
-    #v_real = original[:, 1, :, :]
-    #TKE_real = u_real ** 2 + v_real ** 2
+    
+    """
+    Calculate energy percentage reconstructed
+    
+    Args:   
+            original : (NumpyArray) The ground truth 
+
+            rec      : (NumpyArray) The reconstruction from decoder
+
+    Returns:  
+
+            The energy percentage for construction. Note that it is the Ek/100 !!
+    """
+
+    import numpy as np 
+
     TKE_real = original[:, 0, :, :] ** 2 + original[:, 1, :, :] ** 2
 
     u_rec = rec[:, 0, :, :]
@@ -69,8 +111,20 @@ def get_Ek(original, rec):
     return 1 - np.sum((original[:, 0, :, :] - u_rec) ** 2 + (original[:, 1, :, :] - v_rec) ** 2) / np.sum(TKE_real)
 
 
+
+
+#--------------------------------------------------------
 def get_order(model, latent_dim, data, dataset, std, device):
+    """
+    
+
+    
+    """
+    
+    
     import time
+    import numpy as np 
+
 
     print('############################################')
     print('Ordering modes')
@@ -111,6 +165,9 @@ def get_order(model, latent_dim, data, dataset, std, device):
     return np.array(m), Ecum
 
 
+
+
+#--------------------------------------------------------
 def get_EcumTest(model, latent_dim, data, dataset, std, device, order):
     modes, _ = encode(model, dataset, device)
     print(modes.shape)
@@ -127,6 +184,10 @@ def get_EcumTest(model, latent_dim, data, dataset, std, device, order):
 
     return np.array(Ecum)
 
+
+
+
+#--------------------------------------------------------
 def createModesFile(fname, model, latent_dim, dataset_train, dataset_test, mean, std, device, order, Ecum, Ecum_test, NLvalues, NLmodes, Ek_t):
     # encode
     means_train, stds_train = encode(model, dataset_train, device)
@@ -141,20 +202,33 @@ def createModesFile(fname, model, latent_dim, dataset_train, dataset_test, mean,
         order = np.arange(latent_dim)
 
     with h5py.File(fname, 'w') as f:
+        # mu
         f.create_dataset('vector', data=means_train)
         f.create_dataset('vector_test', data=means_test)
+        
+        # Sigma
         f.create_dataset('stds_vector', data=stds_train)
         f.create_dataset('stds_vector_test', data=stds_test)
+
+        #
         f.create_dataset('modes', data=modes)
         f.create_dataset('zero_output', data=zero_output)
+        
         f.create_dataset('mean', data=mean)
         f.create_dataset('std', data=std)
+        
         f.create_dataset('order', data=order)
+
+
         f.create_dataset('Ecum', data=Ecum)
         f.create_dataset('Ecum_test', data=Ecum_test)
+        
         f.create_dataset('NLvalues', data=NLvalues)
         f.create_dataset('NLmodes', data=NLmodes)
+        
         f.create_dataset('Ek_t', data=Ek_t)
+
+
 
 def get_samples(model, dataset_train, dataset_test, device):
 
@@ -200,8 +274,7 @@ def get_Ek_t(model, data, device):
     return Ek_t
 
 def getNLmodes(model, mode, latent_dim, device):
-    print('Calc NL modes')
-    # decode(model, data, device)
+
 
     zero_output = decode(model, np.zeros((1, latent_dim), dtype=np.float32), device)
     #print(zero_output.shape)
@@ -209,7 +282,7 @@ def getNLmodes(model, mode, latent_dim, device):
     NLvalues = np.arange(-2, 2.1, .1)
 
     NLmodes = np.zeros((NLvalues.shape[0], zero_output.shape[1], zero_output.shape[2], zero_output.shape[3]),
-                       dtype=np.float32)
+                        dtype=np.float32)
     #print(NLmodes.shape)
 
     for idx, value in enumerate(NLvalues):
@@ -219,80 +292,3 @@ def getNLmodes(model, mode, latent_dim, device):
         NLmodes[idx,:,:,:] = decode(model, latent, device)
 
     return NLvalues, NLmodes
-
-
-
-if __name__ == "__main__":
-
-    # weights file
-    weights_files_list = ['03_checkpoints/20230915_10_21_smallerCNN_beta0.05_wDecay0_dim20_lr0.0002OneCycleLR1e-05_bs256_epochs1000_nt27000_epoch_final.pth.tar']
-
-    # Get system info
-    for i in range(torch.cuda.device_count()):
-        print(torch.cuda.get_device_properties(i))
-    device = torch.device('cuda')
-
-    # load data
-    # datafile = '01_data/Re100alpha10_newData_v1.hdf5'
-    datafile = '01_data/Re100alpha10_newData_150000.hdf5'
-
-    # parameters
-    batch_size = 256
-    delta_t = 5
-    n_test = 15000
-
-    u_scaled, mean, std = lib_data.loadData(datafile)
-    n_total = u_scaled.shape[0]
-    n_train = n_total - n_test
-    print(f"N train: {n_train:d}, N test: {n_test:d}, N total {n_total:d}")
-
-    dataset_train = torch.utils.data.DataLoader(dataset=torch.from_numpy(u_scaled[:n_train]), batch_size=batch_size,
-                                                shuffle=False, pin_memory=True, num_workers=2)
-    dataset_train_tc1 = torch.utils.data.DataLoader(dataset=torch.from_numpy(u_scaled[:n_train:delta_t]),
-                                                    batch_size=batch_size,
-                                                    shuffle=False, pin_memory=True, num_workers=2)
-    dataset_test = torch.utils.data.DataLoader(dataset=torch.from_numpy(u_scaled[n_train:]), batch_size=batch_size,
-                                                shuffle=False, pin_memory=True, num_workers=2)
-
-    for weights_file in weights_files_list:
-        out_name = weights_file.split('.pth')[0].split('/')[-1]
-        out_name = '04_modes/' + out_name + '_modes.h5py'
-
-        latent_dim = int(weights_file.split('dim')[-1].split('_')[0])
-        print(f'Latent dim: {latent_dim:2d}')
-
-        # Get model
-        model = lib_model.VAE(latent_dim=latent_dim).to(device)
-        model.eval()
-
-        # Load weights
-        lib_model.load_checkpoint(model=model, path_name=weights_file)
-
-        #create samples
-        #rec_train, rec_test, true_train, true_test = get_samples(model, dataset_train, dataset_test, device)
-        #lib_figures.plotSamples(rec_train, rec_test, true_train, true_test)
-
-        # get Ek evolution in test
-        #Ek_test = get_Ek_t(model, u_scaled[n_train:], device)
-        #lib_figures.plotEk_t(Ek_test)
-
-        try:
-            with h5py.File(out_name, 'r') as f:
-                order = f['order'][:]
-                Ecum = f['Ecum'][:]
-            print('Loaded order from ', out_name)
-
-        except:
-            print('Order not found, generating: ', out_name)
-            # sort modes
-            order, Ecum = get_order(model, latent_dim, u_scaled[:n_train:delta_t], dataset_train_tc1, std, device)
-
-        print('NL mode: ', order[0])
-        NLvalues, NLmodes = getNLmodes(model, order[0], latent_dim, device)
-
-        Ecum_test = get_EcumTest(model, latent_dim, u_scaled[n_train:], dataset_test, std, device, order)
-
-        Ek_t = get_Ek_t(model=model, data=u_scaled[n_train:], device=device)
-
-        # Create modes file
-        createModesFile(out_name, model, latent_dim, dataset_train, dataset_test, mean, std, device, order, Ecum, Ecum_test, NLvalues, NLmodes, Ek_t)

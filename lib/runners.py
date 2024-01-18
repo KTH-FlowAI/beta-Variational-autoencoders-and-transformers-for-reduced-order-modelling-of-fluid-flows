@@ -80,6 +80,10 @@ class vaeRunner(nn.Module):
         print("#"*30)
         self.load_pretrain_model(model_type=model_type)
         print("INFO: Model has been loaded!")
+        
+        self.get_test_data()
+        print("INFO: test data has been loaded!")
+        
 
         print(f"INFO: Inference ended!")
         print("#"*30)
@@ -102,7 +106,7 @@ class vaeRunner(nn.Module):
         
         u_scaled            = u_scaled[::self.config.downsample]
         n_total             = u_scaled.shape[0]
-        self.n_train             = n_total - self.config.n_test
+        self.n_train        = n_total - self.config.n_test
         print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
@@ -114,6 +118,34 @@ class vaeRunner(nn.Module):
         print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
                 f"Num val batch = {len(self.val_dl)}")
         
+
+    def get_test_data(self):
+        """
+        
+        Generate the DataLoder for test 
+
+        """
+        from torch.utils.data import DataLoader
+        
+        u_scaled, self.mean, self.std = loadData(self.datafile)
+        
+        u_scaled            = u_scaled[::self.config.downsample]
+        n_total             = u_scaled.shape[0]
+        self.n_train        = n_total - self.config.n_test
+        
+        print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
+                f"N test: {self.config.n_test:d},"+\
+                f"N total {n_total:d}")
+        
+        self.test_dl        = DataLoader(torch.from_numpy(u_scaled[self.n_train:]), 
+                                        batch_size=1,
+                                        shuffle=False, 
+                                        pin_memory=True, 
+                                        num_workers=2)
+        print(f"INFO: Dataloader generated, Num Test batch = {len(self.test_dl)}")
+        
+
+
 #-------------------------------------------------
     def compile(self):
         """
@@ -244,6 +276,20 @@ class vaeRunner(nn.Module):
         stat_dict   = ckpoint['state_dict']
         self.model.load_state_dict(stat_dict)
         print(f'INFO: the state dict has been loaded!')
+
+
+#-------------------------------------------------
+    def post_process(self):
+
+        """
+
+        Post-processing for Beta-VAE 
+
+        """
+
+        assert (self.test_dl != None), print("ERROR: NOT able to do post-processing without test data!")
+
+        
 
 
 

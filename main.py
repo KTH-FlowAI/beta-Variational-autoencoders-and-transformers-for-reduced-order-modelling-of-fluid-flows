@@ -35,10 +35,10 @@ if __name__ == "__main__":
 
     ## Time-series prediction runner 
 
-    lruner = latentRunner(args.nn,device)
-    if args.m == 'train':
-        lruner.train()
-    elif args.m == 'test':
-        lruner.infer(args.t)
-    elif args.m == 'run':
-        lruner.run()
+    # lruner = latentRunner(args.nn,device)
+    # if args.m == 'train':
+    #     lruner.train()
+    # elif args.m == 'test':
+    #     lruner.infer(args.t)
+    # elif args.m == 'run':
+    #     lruner.run()
