@@ -68,14 +68,14 @@ def get_predictors(name):
         from configs.nomenclature   import  Make_Transformer_Name
         from nns.transformer        import EmbedTransformerEncoder
         try:
-            model = EmbedTransformerEncoder(    d_input     = cfg.in_dim,
-                                                d_output    = cfg.next_step,
-                                                seqLen      = cfg.nmode,
-                                                d_proj      = cfg.time_proj,
-                                                d_model     = cfg.d_model,
-                                                d_ff        = cfg.proj_dim,
-                                                num_head    = cfg.num_head,
-                                                num_layer   = cfg.num_block,)
+            model = EmbedTransformerEncoder(d_input = cfg.in_dim,
+                                            d_output= cfg.next_step,
+                                            n_mode  = cfg.nmode,
+                                            d_proj  = cfg.time_proj,
+                                            d_model = cfg.d_model,
+                                            d_ff    = cfg.proj_dim,
+                                            num_head = cfg.num_head,
+                                            num_layer = cfg.num_block)
         except: 
             print("ERROR: Parameter NOT MATCHED!")
             exit()

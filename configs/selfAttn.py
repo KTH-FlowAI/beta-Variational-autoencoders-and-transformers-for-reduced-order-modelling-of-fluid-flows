@@ -4,7 +4,6 @@ class selfAttn_config:
     """
     from configs.vae import VAE_config 
     
-    target      = "VAE" # POD or VAE
     
     in_dim      = 64
     out_dim     = 64 # The output sequence length
@@ -12,17 +11,14 @@ class selfAttn_config:
 
     time_proj   = 64 # The projection on time, which is used for new embedding stragtegy 
     next_step   = 1
-    if target == "VAE":
-        nmode       = VAE_config.latent_dim  # Should be consistent as the modes
-    elif target == "POD":
-        nmode       = 10  # Choose from [10, 15, 20] 
+    
+    nmode       = VAE_config.latent_dim  # Should be consistent as the modes
 
 
     num_head    = 4
-    attn_type   = "selfconv" # self or selfconv or easy
-    # attn_type   = "easy" # self or selfconv or easy
+    attn_type   = "self" # self or selfconv or easy
 
-    embed       = "time" # sin / cos/ posenc
+    embed       = "time" # sin / cos/ time
     num_block   = 4   # Number of layer 
 
     is_res_attn = True

@@ -54,12 +54,14 @@ class vaeRunner(nn.Module):
         
         self.model.to(device)
 
+        self.fmat       =  '.pth.tar'
+
         print(f"INIT betaVAE, device: {device}")
         print(f"Case Name:\n {self.filename}")
 #-------------------------------------------------
     def run(self):
         self.train()
-        self.infer()
+        self.infer(model_type='final')
 
 #-------------------------------------------------
     def train(self):
@@ -74,11 +76,10 @@ class vaeRunner(nn.Module):
         print("#"*30)
 
 #-------------------------------------------------
-    def infer(self):
+    def infer(self, model_type):
         print("#"*30)
-        print("INFO: Start post-processing")
-        self.load_pretrain_model()
-
+        self.load_pretrain_model(model_type=model_type)
+        print("INFO: Model has been loaded!")
 
         print(f"INFO: Inference ended!")
         print("#"*30)
@@ -203,27 +204,39 @@ class vaeRunner(nn.Module):
             if (loss_test < bestloss and epoch > 100):
                 bestloss = loss_test
                 checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-                ckp_file = f'{pathsBib.chekp_path}/{self.filename}_epoch_bestTest.pth.tar'
+                ckp_file = f'{pathsBib.chekp_path}/{self.filename}_bestVal' + self.fmat
                 save_checkpoint(state=checkpoint, path_name=ckp_file)
                 print(f'## Checkpoint. Epoch: {epoch}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
         checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-        ckp_file = f'{pathsBib.chekp_path}/{self.filename}_epoch_final.pth.tar'
+        ckp_file = f'{pathsBib.chekp_path}/{self.filename}_final' + self.fmat
         save_checkpoint(state=checkpoint, path_name=ckp_file)
         print(f'Checkpoint. Final epoch, loss: {loss}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
 
 #-------------------------------------------------
 
-    def load_pretrain_model(self):
+    def load_pretrain_model(self,model_type='pre'):
         """
 
         Load the pretrained model for beta VAE
 
+        Args: 
+
+            model_type  : ['pre', 'val','final']  (str) Choose from pre-trained, best valuation and final model 
+        
         """
         
+        model_type_all = ['pre','val','final']
+        assert(model_type in model_type_all), print('ERROR: No type of the model matched')
+
+        if      model_type == 'pre':    model_path = pathsBib.pretrain_path + self.filename               + self.fmat
+        elif    model_type == 'val' :   model_path = pathsBib.chekp_path    + self.filename + '_bestVal' + self.fmat
+        elif    model_type == 'final' : model_path = pathsBib.chekp_path    + self.filename + '_final'    + self.fmat
+        
+
         try:
-            ckpoint = torch.load(pathsBib.pretrain_path + self.filename + ".pth.tar", map_location= self.device)
+            ckpoint = torch.load(model_path, map_location= self.device)
             
         except:
             print("ERROR: Model NOT found!")
@@ -231,7 +244,6 @@ class vaeRunner(nn.Module):
         stat_dict   = ckpoint['state_dict']
         self.model.load_state_dict(stat_dict)
         print(f'INFO: the state dict has been loaded!')
-        print(self.model.eval)
 
 
 
@@ -257,8 +269,11 @@ class latentRunner(nn.Module):
         print("#"*30)
         print(f"INIT temporal predictor: {name}, device: {device}")
         self.device = device
-        self.model, self.filename, self.config = get_predictors(name)
+        self.model,self.filename, self.config = get_predictors(name)
+        
         self.NumPara = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+
+        self.fmat   = '.pt'
         print(f"INFO: The model has been generated, num of parameter is {self.NumPara}")
         print(f"Case Name:\n {self.filename}")
 
@@ -277,10 +292,28 @@ class latentRunner(nn.Module):
         print("#"*30)
 
 #-------------------------------------------------
-    def infer(self, if_window, if_pmap):
+    def infer(self, model_type = 'pre',
+            if_window=True, 
+            if_pmap=True):
+        """
+        
+        Inference and evaluation of the model 
+
+        Args: 
+
+            model_type: (str) The type of model to load 
+
+            if_window : (str) If compute the sliding-widnow error 
+
+            if_pmap : (str) If compute the Poincare Map 
+        
+        """
+        
         print("#"*30)
         print("INFO: Start post-processing")
-        self.load_pretrain_model()
+        # self.com
+        self.load_pretrain_model(model_type=model_type)
+
         self.post_process(if_window,if_pmap)
         print(f"INFO: Inference ended!")
         print("#"*30)
@@ -345,21 +378,41 @@ class latentRunner(nn.Module):
                         "history":history,
                         "time":cost_time}
         
-        torch.save(check_point,pathsBib.model_path + self.filename+".pt")
+        torch.save(check_point,pathsBib.model_path + self.filename + self.fmat)
         print(f"INFO: The checkpoints has been saved!")
 
 #-------------------------------------------------
 
 
-    def load_pretrain_model(self):
+    def load_pretrain_model(self,model_type='pre'):
+        """
+
+        Load the pretrained model for beta VAE
+
+        Args: 
+
+            model_type  : ['pre', 'val','final']  (str) Choose from pre-trained, best valuation and final model 
+        
+        """
+        
+        model_type_all = ['pre','val','final']
+        assert(model_type in model_type_all), print('ERROR: No type of the model matched')
+
+        if      model_type == 'pre':    model_path = pathsBib.pretrain_path + self.filename               + self.fmat
+        elif    model_type == 'val' :   model_path = pathsBib.chekp_path    + self.filename + '_bestVal'  + self.fmat
+        elif    model_type == 'final' : model_path = pathsBib.chekp_path    + self.filename + '_final'    + self.fmat
         try:
-            ckpoint = torch.load(pathsBib.model_path + self.filename + ".pt", map_location= self.device)
+            ckpoint = torch.load(model_path, map_location= self.device)
+            
         except:
             print("ERROR: Model NOT found!")
             exit()
         stat_dict   = ckpoint['model']
+
         self.model.load_state_dict(stat_dict)
+
         print(f'INFO: the state dict has been loaded!')
+        print(self.model.eval)
 
 
 #-------------------------------------------------

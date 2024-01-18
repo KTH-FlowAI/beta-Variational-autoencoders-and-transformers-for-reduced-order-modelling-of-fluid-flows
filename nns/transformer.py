@@ -8,16 +8,17 @@ from nns.embedding        import TimeSpaceEmbedding
 from    torch                   import nn
 
 class EmbedTransformerEncoder(nn.Module):
-    """
-    A transformer-based architecture using temporal-spatial embedding and a stack of encoder 
-    here we use self attention as the attention mechanism 
-    """
+
 
     def __init__(self, d_input, d_output, n_mode, 
                         d_proj, d_model, d_ff,
                         num_head,num_layer,
                         act_proj= "relu",
                         dropout= 1e-5) -> None:
+        """
+    A transformer-based architecture using temporal-spatial embedding and a stack of encoder 
+    here we use self attention as the attention mechanism 
+        """
         super(EmbedTransformerEncoder,self).__init__()
 
         self.embed      =   TimeSpaceEmbedding(d_input, n_mode, d_proj, d_model)

@@ -50,7 +50,7 @@ def make_Prediction(test_data, model,
 
 def Sliding_Window_Error(test_data,
                         model, device,
-                        in_dim,window = 100):
+                        in_dim,window = 5):
     """
     Compute the sliding window error on test dataset
     Args:
@@ -77,7 +77,7 @@ def Sliding_Window_Error(test_data,
 
     SeqLen = test_data.shape[0]
     error = None
-    for init in tqdm(range(in_dim,SeqLen-window,2)):
+    for init in tqdm(range(in_dim,SeqLen-window,1)):
         temporalModes_pred = copy.deepcopy(test_data)
 
         for timestep in range(init, init+window):
