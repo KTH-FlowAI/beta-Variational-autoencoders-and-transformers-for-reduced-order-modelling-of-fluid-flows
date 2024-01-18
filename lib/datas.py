@@ -36,7 +36,7 @@ def loadData(file, printer=False):
 
     return u_scaled, mean, std
 
-def get_vae_DataLoader(d_train,d_val,device,batch_size):
+def get_vae_DataLoader(d_train, val_split ,device,batch_size):
     """
     make tensor data loader for training
 
@@ -54,19 +54,33 @@ def get_vae_DataLoader(d_train,d_val,device,batch_size):
         train_dl, val_dl: The train and validation DataLoader
     """
     import torch 
+    from torch.utils.data import DataLoader, TensorDataset,random_split
+    
+    
+    len_d = len(d_train)
+    valid_size = int(val_split * len_d)
+    train_size = len_d - valid_size
 
+    d_train    = TensorDataset(torch.from_numpy(d_train))
+
+    train_d , val_d = random_split(d_train,[train_size, valid_size])
+    
+    del d_train 
+    
     if('cuda' in device):
-        train_dl = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_train).to(device), batch_size=batch_size,
+        train_dl = torch.utils.data.DataLoader(dataset=train_d.to(device), batch_size=batch_size,
                                                 shuffle=True, num_workers=0)
-        val_dl   = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_val).to(device), batch_size=batch_size,
+        val_dl   = torch.utils.data.DataLoader(dataset=val_d.to(device), batch_size=batch_size,
                                                 shuffle=False, num_workers=0)
 
     else:
-        train_dl = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_train), batch_size=batch_size,
+        train_dl = torch.utils.data.DataLoader(dataset=train_d, batch_size=batch_size,
                                                 shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
-        val_dl  = torch.utils.data.DataLoader(dataset=torch.from_numpy(d_val), batch_size=batch_size,
+        val_dl  = torch.utils.data.DataLoader(dataset=val_d, batch_size=batch_size,
                                                 shuffle=True, pin_memory=True, num_workers=4, persistent_workers=True)
     
+    del train_d, val_d
+
     return train_dl, val_dl
 
 

@@ -111,13 +111,15 @@ class vaeRunner(nn.Module):
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
         
-        self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:self.n_train],
-                                                d_val=u_scaled[self.n_train:],
-                                                device= self.device,
-                                                batch_size= self.config.batch_size)
+        self.train_dl, self.val_dl = get_vae_DataLoader(    d_train=u_scaled[:self.n_train],
+                                                            val_split=self.config.val_ratio,
+                                                            device= self.device,
+                                                            batch_size= self.config.batch_size)
         print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
                 f"Num val batch = {len(self.val_dl)}")
         
+
+#-------------------------------------------------
 
     def get_test_data(self):
         """
@@ -288,7 +290,7 @@ class vaeRunner(nn.Module):
         """
 
         assert (self.test_dl != None), print("ERROR: NOT able to do post-processing without test data!")
-
+        
         
 
 

@@ -1,7 +1,8 @@
-import torch 
-from lib.runners import vaeRunner, latentRunner
+import   torch 
 from lib import init
+from lib.runners import vaeRunner, latentRunner
 import argparse
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-nn',default="easy", type=str,   help="Choose the model for time-series prediction: easy, self OR lstm")

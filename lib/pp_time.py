@@ -140,7 +140,7 @@ Implement Poincare Maps on test data
 @yuningw
 """
 
-
+#--------------------------------------------------------
 def Zero_Cross(data,postive_dir = True):    
     """
     Function to find the cross section betwee positive and negative of a 1D Vector
@@ -173,6 +173,7 @@ def Zero_Cross(data,postive_dir = True):
 
 
 
+#--------------------------------------------------------
 def Intersection(data,planeNo = 0,postive_dir = True):
     """
     Compute the intersections of time-series data w.r.t each temporal mode
@@ -202,6 +203,9 @@ def Intersection(data,planeNo = 0,postive_dir = True):
 
     return InterSec
 
+
+
+#--------------------------------------------------------
 def PDF(InterSecX,InterSecY,
         xmin = -1,xmax = 1,x_grid = 50,
         ymin = -1,ymax = 1,y_grid = 50):
