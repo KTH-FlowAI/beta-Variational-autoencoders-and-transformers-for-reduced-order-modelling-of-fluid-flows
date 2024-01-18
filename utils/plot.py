@@ -8,6 +8,8 @@ class colorplate:
     cyan = "#5DA39D" # er lv
     black = "#151D29" # lanjian
 
+
+
 def plot_loss(history, save_file:None, dpi = 200):
     """
     Plot the loss evolution during training

@@ -1,6 +1,17 @@
+"""
+Functions for loading data
+
+author: @yuningw
+"""
 import h5py
 import numpy as np
 
+
+###############################
+## beta-VAE
+###############################
+
+#---------------------------------------------------------------------
 def loadData(file, printer=False):
     """
     Read flow field dataset
@@ -36,6 +47,8 @@ def loadData(file, printer=False):
 
     return u_scaled, mean, std
 
+
+#---------------------------------------------------------------------
 def get_vae_DataLoader(d_train, val_split ,device,batch_size):
     """
     make tensor data loader for training
@@ -84,6 +97,14 @@ def get_vae_DataLoader(d_train, val_split ,device,batch_size):
     return train_dl, val_dl
 
 
+
+
+
+###############################
+## Temporal Prediction
+###############################
+
+#---------------------------------------------------------------------
 def make_Sequence(cfg,data):
     """
     Generate time-delay sequence data 
@@ -118,6 +139,7 @@ def make_Sequence(cfg,data):
     return X, Y
 
 
+#---------------------------------------------------------------------
 def make_DataLoader(X,y,batch_size,
                     drop_last=False,train_split = 0.8):
     """

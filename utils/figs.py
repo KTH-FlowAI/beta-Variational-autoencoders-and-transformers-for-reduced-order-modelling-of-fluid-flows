@@ -1,6 +1,16 @@
+"""
+Function supports visualisation
+
+Author: @yuningw & @alsora
+
+Editting: @yuningw 
+"""
+
+
 import matplotlib.pyplot as plt
 
 
+#--------------------------------------------------------
 def plot_training(logFile):
     """Plot from tensorboard file"""
     from tbparse import SummaryReader
@@ -42,7 +52,9 @@ def plot_training(logFile):
     plt.legend()
 
     plt.savefig('training.png', format='png', bbox_inches="tight")
-    plt.show()
+
+
+#--------------------------------------------------------
 
 def annot_max(x,y, ax=None):
     xmax = x[np.argmax(y)]
@@ -54,9 +66,11 @@ def annot_max(x,y, ax=None):
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
     arrowprops=dict(arrowstyle="->",connectionstyle="angle,angleA=0,angleB=60")
     kw = dict(xycoords='data',textcoords="axes fraction",
-              arrowprops=arrowprops, bbox=bbox_props, ha="right", va="top")
+            arrowprops=arrowprops, bbox=bbox_props, ha="right", va="top")
     ax.annotate(text, xy=(xmax, ymax), xytext=(0.94,0.96), **kw)
 
+
+#--------------------------------------------------------
 
 def plotCompleteModes(modes, temporalModes, numberModes):
     from scipy import signal
@@ -77,13 +91,13 @@ def plotCompleteModes(modes, temporalModes, numberModes):
         Vlim = max( abs(Vplot.flatten()) )
 
         im = ax[i,0].imshow(Uplot, cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
         #ax[mode,0].set_title('Mode ' + str(mode) + ', u')
         ax[i,0].set_ylabel('y/c')
         fig.colorbar(im, ax=ax[i,0], shrink=0.8, aspect=10)
 
         im = ax[i,1].imshow(Vplot, cmap="RdBu_r", vmin=-Vlim, vmax=Vlim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
         ax[i,1].set_title('Mode ' + str(i+1))
         #ax[mode,1].set_ylabel('y/c')
         fig.colorbar(im, ax=ax[i,1], shrink=0.8, aspect=10)
@@ -102,6 +116,11 @@ def plotCompleteModes(modes, temporalModes, numberModes):
 
     plt.savefig('modes.png', format='png', bbox_inches="tight")
 
+
+
+
+#--------------------------------------------------------
+
 def correlationMatrix(temporalModes):
     import matplotlib.pyplot as plt
     latent_dim = temporalModes.shape[1]
@@ -118,7 +137,12 @@ def correlationMatrix(temporalModes):
     plt.title(str(np.linalg.det(corr_matrix_latent)))
 
     plt.savefig('matrix.png', format='png', bbox_inches="tight")
-    plt.show()
+
+
+
+
+
+#--------------------------------------------------------
 
 def plotTemporalSeries(modes):
     latent_dim = modes.shape[1]
@@ -133,7 +157,10 @@ def plotTemporalSeries(modes):
 
 
     plt.savefig('series.png', format='png', bbox_inches="tight")
-    plt.show()
+    
+
+
+#--------------------------------------------------------
 
 def plotSamples(rec_train, rec_test, true_train, true_test):
     print(rec_train.shape)
@@ -143,71 +170,79 @@ def plotSamples(rec_train, rec_test, true_train, true_test):
 
     fig, ax = plt.subplots(4, 2, figsize=(16, 4 * 1.6))
 
+###########################################################################################
     axs = ax[0, 0]
     im = axs.imshow(true_train[0], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
 
     axs.set_title('True train u')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
 
     axs = ax[1, 0]
     im = axs.imshow(true_train[1], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
     axs.set_title('True train v')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
 
     axs = ax[2, 0]
     im = axs.imshow(true_test[0], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
     axs.set_title('True test u')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
 
     axs = ax[3, 0]
     im = axs.imshow(true_test[1], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
     axs.set_title('True test v')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
-    ###########################################################################################
+    
+###########################################################################################
     axs = ax[0, 1]
     im = axs.imshow(rec_train[0], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
 
     axs.set_title('Rec train u')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
 
     axs = ax[1, 1]
     im = axs.imshow(rec_train[1], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
     axs.set_title('Rec train v')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
 
     axs = ax[2, 1]
     im = axs.imshow(rec_test[0], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
     axs.set_title('Rec test u')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
 
     axs = ax[3, 1]
     im = axs.imshow(rec_test[1], cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                         extent=[-9, 87, -14, 14])
+                        extent=[-9, 87, -14, 14])
     axs.set_title('Rec test v')
     fig.colorbar(im, ax=axs, shrink=0.8, aspect=10)
     fig.set_tight_layout(True)
-    plt.show()
 
+
+
+#--------------------------------------------------------
 def plotEk_t(Ek):
     plt.plot(Ek)
     plt.xlabel('Test data index')
     plt.ylabel('Ek')
-    plt.show()
 
+
+
+#--------------------------------------------------------
 def plotEcum(Ecum):
     plt.plot(np.arange(1, Ecum.shape[0]+1), Ecum)
     plt.xlabel('Number of modes')
     plt.ylabel('Cumulative Ek')
     plt.grid()
-    plt.show()
 
+
+
+#--------------------------------------------------------
 def plotNLmodePoint(mode, values):
     fig, ax = plt.subplots(1, 2, figsize=(7, 3))
 
@@ -235,9 +270,9 @@ def plotNLmodePoint(mode, values):
     ax[1].set_title('v')
     fig.set_tight_layout(True)
 
-    plt.show()
 
-def plotNLmodeField(mode, values):
+#--------------------------------------------------------
+def plotNLmodeField(modes, values):
 
     valuesToPlot = np.array([-2., -1., 0., 1., 2.])
 
@@ -256,9 +291,6 @@ def plotNLmodeField(mode, values):
         Uplot = modes[idx,0,:,:]
         Vplot = modes[idx,1,:,:]
 
-        #Ulim = max( abs(modes[:,0,:,:].flatten()) )
-        #Vlim = max( abs(modes[:,1,:,:].flatten()) )
-
         Ulim = np.std(modes[:,0,:,:].flatten()) * 4
         Vlim = np.std(modes[:,1,:,:].flatten()) * 4
 
@@ -268,14 +300,14 @@ def plotNLmodeField(mode, values):
         fig.colorbar(im, ax=ax[idx,0], shrink=0.8, aspect=10)
 
         im = ax[idx,1].imshow(Vplot, cmap="RdBu_r", vmin=-Vlim, vmax=Vlim, extent=[-9, 87, -14, 14])
-        #ax[idx,1].set_title('Mode {}, value {}, v'.format(mode, round(NLvalues[value],2)))
         fig.colorbar(im, ax=ax[idx,1], shrink=0.8, aspect=10)
 
 
     ax[idx,0].set_xlabel('x/c')
     ax[idx,1].set_xlabel('x/c')
 
-    plt.show()
+
+
 
 if __name__ == "__main__":
     import h5py
@@ -303,7 +335,7 @@ if __name__ == "__main__":
     plotNLmodePoint(NLmodes, NLvalues)
     plotNLmodeField(NLmodes, NLvalues)
     plotCompleteModes(modes, temporalModes, modes.shape[0])
-    plt.show()
+
 
     plotTemporalSeries(temporalModes)
     correlationMatrix(temporalModes)

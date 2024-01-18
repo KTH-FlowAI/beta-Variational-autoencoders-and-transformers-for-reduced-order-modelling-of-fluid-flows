@@ -1,13 +1,15 @@
-import torch
-import numpy as np
-import h5py
-from lib.init import pathsBib
 """
 Post-processing and analysis algorithm for beta-VAE in latent space and physic space
 
 author :    @alsora
 editing:   @yuningw
 """
+
+import torch
+import numpy as np
+import h5py
+from lib.init import pathsBib
+
 ################################
 ### Main programme for spatial analysis
 ###############################
@@ -655,7 +657,7 @@ def createModesFile(fname,
             f.create_dataset('vector_test', data=means_test)
     f.close()
 
-    
+
     if_save = True
 
     

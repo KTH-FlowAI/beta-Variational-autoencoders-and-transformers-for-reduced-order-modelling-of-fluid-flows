@@ -1,6 +1,6 @@
 """
 Initialisation and setup before running 
-@yuningW
+@yuningw
 """
 
 class pathsBib: 
@@ -65,7 +65,7 @@ def init_path():
         print("#"*30)
         is_init_path = True
     except:
-        print(f"Error: Please check setup for your path!")
+        print(f"Error: FAILD to inital path, Please check setup for your path!")
 
     return is_init_path
 
