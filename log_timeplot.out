@@ -25,11 +25,11 @@ INFO: Start spatial mode generating
 ##############################
 Ordering modes
 (801, 2)
-[] 0 : Ek=0.3830, elapsed: 0.52s
-[] 1 : Ek=0.3811, elapsed: 0.57s
+[] 0 : Ek=0.3830, elapsed: 0.54s
+[] 1 : Ek=0.3811, elapsed: 0.51s
 Adding:  0 , Ek:  0.3830257058143616
 ##############################
-[0] 1 : Ek=0.9373, elapsed: 0.57s
+[0] 1 : Ek=0.9373, elapsed: 0.51s
 Adding:  1 , Ek:  0.9372855797410011
 ##############################
 Rank finished, the rank is [0 1]
@@ -99,3 +99,4 @@ Save Fig to:figs/easy/
 Load data from:res/easyAttn_64in_64dmodel_1next_2dim_timeemb_4h_4nb_128ff_reluact_Noneoutact_100Epoch_135000N_TrueES_50P.npz
 INFO: Loss Evolution Saved!
 INFO: Prediction Evolution Saved!
+INFO: l2-norm error Horizion Saved!

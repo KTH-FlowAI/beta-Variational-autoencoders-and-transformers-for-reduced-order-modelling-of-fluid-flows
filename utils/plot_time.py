@@ -18,9 +18,12 @@ class colorplate:
 
 def vis_temporal_Prediction(model_type,
                             predictor:latentRunner,
-                            if_loss, 
-                            if_evo,
-                            if_):
+                            if_loss     = True, 
+                            if_evo      = True,
+                            if_window   = True,
+                            if_pmap_s   = False,
+                            if_pmap_all = False
+                            ):
     """
     Visualisation of the temporal-dynamics prediction results 
 
@@ -30,7 +33,16 @@ def vis_temporal_Prediction(model_type,
         
         predictor   : (lib.runners.latentRunner) The module for latent-space temporal-dynamics predictions
 
-    
+        if_loss     : (bool) If plot the loss evolution 
+        
+        if_evo      : (bool) If plot the temporal evolution of latent mode
+        
+        if_window   : (bool) If plot the l2-norm error horizon
+        
+        if_pmap_s   : (bool) If plot the single Poincare Map
+        
+        if_pmap_all : (bool) If plot all the Poincare Maps
+
     """
 
     from  pathlib import Path
@@ -57,11 +69,17 @@ def vis_temporal_Prediction(model_type,
 
     Path(figPath).mkdir(exist_ok=True)
 
-    plot_loss(predictor.history, save_file= figPath + "loss_" + case_name + '.jpg' )
-    print(f'INFO: Loss Evolution Saved!')
+    if if_loss:
+        plot_loss(predictor.history, save_file= figPath + "loss_" + case_name + '.jpg' )
+        print(f'INFO: Loss Evolution Saved!')
 
-    plot_signal(g,p,            save_file=figPath + "signal_" + case_name + '.jpg' )
-    print(f"INFO: Prediction Evolution Saved!")
+    if if_evo and (g.any() !=None) and (p.any() != None):
+        plot_signal(g,p,            save_file=figPath + "signal_" + case_name + '.jpg' )
+        print(f"INFO: Prediction Evolution Saved!")
+
+    if if_window and (e.any() != None):
+        plot_pred_horizon_error(e, colorplate.blue, save_file=figPath + "horizon_" + case_name + '.jpg' )
+        print(f"INFO: l2-norm error Horizion Saved!")
 
     ## Poincare Map 
     planeNo = 0
@@ -70,16 +88,20 @@ def vis_temporal_Prediction(model_type,
     grid_val = 50
     i = 1; j =1 
 
-    plotSinglePoincare( planeNo, i, j, 
+    if if_pmap_s and (pmap_g.any() != None) and (pmap_p.any() != None):
+        plotSinglePoincare( planeNo, i, j, 
                         pmap_p,pmap_g,
                         lim_val, grid_val,
                         save_file = figPath + f'Pmap_{i}_{j}_' + case_name + '.jpg')
-
-    plotCompletePoincare(predictor.config.latent_dim,planeNo, 
+        print(f"INFO: Single Poincare Map of {i}, {j} Saved!")
+    
+    if if_pmap_all and (pmap_g.any() != None) and (pmap_p.any() != None):
+        plotCompletePoincare(predictor.config.latent_dim,planeNo, 
                         pmap_p, pmap_g,
                         lim_val, grid_val,
                         save_file = None, 
                         dpi       = 200)
+        print(f"INFO: Single Poincare Map of {i}, {j} Saved!")
 
     return
 
@@ -149,20 +171,29 @@ def plot_signal(test_data, Preds, save_file:None, dpi = 200):
         ax.plot(Preds[:,i],c = cc.blue,lw = 1.5)
         ax.set_ylabel(f"M{i+1}")
         axs[-1].set_xlabel("t",fontsize=20)
+
+    ax.legend(["Ground truth",'Prediction'])
+    
     if save_file != None:
         plt.savefig(save_file, bbox_inches='tight', dpi= dpi)
 
 
 #-----------------------------------------------------------
 
-def plot_pred_horizon_error(window_err, Color, fname, dpi=300):
+def plot_pred_horizon_error(window_err, Color, save_file, dpi=300):
     """
     Viusalize the latent-space prediction horizon error 
 
     Args:
     
+        window_err      :   (NumpyArray) The horizon of l2-norm error of  prediction 
+
+        Color           :   (str) The color for the line 
+
+        save_file   : Path to save the figure, if None, then just show the plot
+
+        dpi         : The dpi for save the file 
         
-    
     """
     import matplotlib.pyplot as plt 
 
@@ -171,6 +202,9 @@ def plot_pred_horizon_error(window_err, Color, fname, dpi=300):
     axs.plot(window_err, lw = 3, c = Color)
     axs.set_xlabel("Prediction steps",fontsize = 20)
     axs.set_ylabel(r"$\epsilon$",fontsize = 20)  
+
+    if save_file != None:
+        plt.savefig(save_file, bbox_inches='tight', dpi= dpi)
 
     return 
 
