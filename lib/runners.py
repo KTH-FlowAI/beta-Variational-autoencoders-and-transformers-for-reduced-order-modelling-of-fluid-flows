@@ -112,8 +112,8 @@ class vaeRunner(nn.Module):
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
         
-        self.train_dl, self.val_dl = get_vae_DataLoader(    d_train=u_scaled[:self.n_train],
-                                                            val_split=self.config.val_ratio,
+        self.train_dl, self.val_dl = get_vae_DataLoader(    d_train=u_scaled,
+                                                            n_train=self.n_train,
                                                             device= self.device,
                                                             batch_size= self.config.batch_size)
         print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
@@ -168,6 +168,7 @@ class vaeRunner(nn.Module):
         
         """
         from torch.utils.tensorboard import SummaryWriter
+        from utils.io import save_checkpoint
 
         print(f"Training {self.filename}")
         logger = SummaryWriter(log_dir=pathsBib.log_path + self.filename)
