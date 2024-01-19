@@ -483,7 +483,9 @@ class latentRunner(nn.Module):
         stat_dict   = ckpoint['model']
 
         self.model.load_state_dict(stat_dict)
+        self.history = ckpoint['history']
 
+        
         print(f'INFO: the state dict has been loaded!')
         print(self.model.eval)
 

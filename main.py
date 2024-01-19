@@ -9,6 +9,7 @@ NOTE: The "run" in running mode here means we do both train and infer
 import      torch 
 from        lib import init
 from        lib.runners import vaeRunner, latentRunner
+from        utils.plot_time import vis_temporal_Prediction
 import      argparse
 
 
@@ -46,3 +47,5 @@ if __name__ == "__main__":
         lruner.infer(args.t)
     elif args.m == 'run':
         lruner.run()
+
+    vis_temporal_Prediction(model_type=args.nn, predictor=lruner)

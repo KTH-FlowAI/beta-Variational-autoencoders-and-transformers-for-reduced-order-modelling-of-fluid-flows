@@ -13,7 +13,7 @@ from utils.config import VAE_config as vae_cfg, Name_VAE, LSTM_config as cfg, Ma
 from utils.model import VAE
 # Plot tools
 import utils.plt_rc_setup
-from utils.plot import colorplate as cc 
+from utils.plot_time import colorplate as cc 
 from utils.NNs.RNNs import LSTMs 
 from utils.datas import make_DataLoader, make_Sequence 
 from utils.train import fit
