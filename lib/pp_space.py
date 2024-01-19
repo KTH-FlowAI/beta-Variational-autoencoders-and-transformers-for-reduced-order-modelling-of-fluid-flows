@@ -2,7 +2,8 @@
 Post-processing and analysis algorithm for beta-VAE in latent space and physic space
 
 author :    @alsora
-editing:   @yuningw
+editting:   @yuningw
+
 """
 
 import torch
@@ -26,7 +27,6 @@ def spatial_Mode(   fname,
                     if_nlmode   = True,
                     if_Ecumt    = True,
                     if_Ek_t     = True,
-
                 ): 
     """
     The main function for spatial mode analysis and generate the dataset 
