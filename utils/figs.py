@@ -71,10 +71,8 @@ def annot_max(x, y, ax=None):
 
 # --------------------------------------------------------
 
-def plotCompleteModes(modes, temporalModes, numberModes):
+def plotCompleteModes(modes, temporalModes, numberModes, fs):
     from scipy import signal
-
-    fs = 1
 
     fig, ax = plt.subplots(numberModes, 3, figsize=(16, numberModes * 1.6), sharex='col')
 
@@ -263,8 +261,14 @@ if __name__ == "__main__":
         NLvalues = f['NLvalues'][:]
         NLmodes = f['NLmodes'][:]
 
+    # Re40 case is sampled at 1tc, Re100 case is sampled at tc/5
+    if 'Re40' in file:
+        fs = 1
+    else:
+        fs = 5
+
     plotNLmodeField(NLmodes, NLvalues)
-    plotCompleteModes(modes, temporalModes, modes.shape[0])
+    plotCompleteModes(modes, temporalModes, modes.shape[0], fs)
 
     plotTemporalSeries(temporalModes)
     correlationMatrix(temporalModes)
