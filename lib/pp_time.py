@@ -128,6 +128,39 @@ def l2Norm_Error(Pred, Truth):
     return error.mean()*100
 
 
+#--------------------------------------------------------
+def make_physical_prediction(vae,
+                            pred_latent,
+                            true_latent,
+                            device):
+    """
+    Reconstruct the latent-space prediction to the physical space
+    
+    Args: 
+
+            vae         : (lib.runners.vaeRunner) The module for employed VAE     
+
+            pred_latent : (Numpyrray) The latent-space prediction 
+
+            true_latent : (NumpyArray) The latent-space ground truth from VAE
+
+            device      : (str) The device for computation 
+
+    Returns:
+
+            rec_vae     : (NumpyArray) Reconstruction from reference latent variable
+
+            rec_pred    : (NumpyArray) Reconstruction from the predicted latent variable
+    """
+    import numpy as np
+    from lib.pp_space import decode
+
+    rec_vae     =   decode(vae.model,true_latent,device)
+
+    rec_pred    =   decode(vae.model,pred_latent,device)
+
+    return rec_vae, rec_pred
+
 
 
 
