@@ -19,7 +19,7 @@ from utils.pp import make_Prediction, Sliding_Window_Error
 from utils.chaotic import Zero_Cross, Intersection, PDF
 # Plot tools
 import utils.plt_rc_setup
-from utils.plot_time import colorplate as cc, plot_loss, plot_signal 
+from utils.figs_time import colorplate as cc, plot_loss, plot_signal 
 
 
 # ArgParse
