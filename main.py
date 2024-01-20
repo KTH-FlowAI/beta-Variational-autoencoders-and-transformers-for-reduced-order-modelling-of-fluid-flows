@@ -11,7 +11,7 @@ import      argparse
 from        lib             import init, POD
 from        lib.runners     import vaeRunner, latentRunner
 from        utils.figs_time import vis_temporal_Prediction
-from        utils.figs      import vis_bvae
+from        utils.figs      import vis_bvae, vis_pod
 
 
 parser = argparse.ArgumentParser()
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     datafile = init.init_env(args.re)
 
 
-    ## Beta-VAE 
+    ## Beta-VAE
     bvae   = vaeRunner(device,datafile)
     if args.m == 'train':
         bvae.train()
@@ -49,7 +49,6 @@ if __name__ == "__main__":
         POD.get_POD()
         POD.eval_POD()
 
-
     # Time-series prediction runner 
     lruner = latentRunner(args.nn,device)
     if args.m == 'train':
@@ -61,4 +60,5 @@ if __name__ == "__main__":
 
     vis_bvae(init.pathsBib.res_path + "modes_" + bvae.filename + ".hdf5",
              init.pathsBib.log_path + bvae.filename)
+    vis_pod(POD)
     vis_temporal_Prediction(model_type=args.nn, predictor=lruner, vae=bvae)

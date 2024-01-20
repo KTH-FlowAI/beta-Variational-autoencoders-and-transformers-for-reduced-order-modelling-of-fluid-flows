@@ -7,11 +7,11 @@ Editting: @yuningw
 """
 
 import matplotlib.pyplot as plt
-from lib.init import pathsBib
+import numpy as np
 
 
 # --------------------------------------------------------
-def plot_training(logFile):
+def plot_training(logFile, path):
     """Plot from tensorboard file"""
     from tbparse import SummaryReader
 
@@ -52,7 +52,7 @@ def plot_training(logFile):
 
     plt.legend()
 
-    plt.savefig(pathsBib.fig_path + 'bVAE/training.png', format='png', bbox_inches="tight")
+    plt.savefig(path + 'training.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
@@ -74,7 +74,7 @@ def annot_max(x, y, ax=None):
 
 # --------------------------------------------------------
 
-def plotCompleteModes(modes, temporalModes, numberModes, fs, order):
+def plotCompleteModes(modes, temporalModes, numberModes, fs, order, path):
     from scipy import signal
     import numpy as np
 
@@ -84,7 +84,6 @@ def plotCompleteModes(modes, temporalModes, numberModes, fs, order):
 
     for i, mode in np.ndenumerate(order):
         i = i[0]
-        print(i, mode)
         Uplot = modes[mode, 0, :, :]
         Vplot = modes[mode, 1, :, :]
 
@@ -115,12 +114,12 @@ def plotCompleteModes(modes, temporalModes, numberModes, fs, order):
             ax[i, 1].set_xlabel('$x/c$')
             ax[i, 2].set_xlabel('$f/f_c$')
 
-    plt.savefig(pathsBib.fig_path + 'bVAE/modes.png', format='png', bbox_inches="tight")
+    plt.savefig(path + 'modes.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
 
-def correlationMatrix(temporalModes, order):
+def correlationMatrix(temporalModes, order, path):
     import pandas as pd
     import seaborn as sns
     import numpy as np
@@ -169,12 +168,12 @@ def correlationMatrix(temporalModes, order):
     plt.xticks(rotation=0)
     plt.yticks(rotation=0)
 
-    plt.savefig(pathsBib.fig_path + 'bVAE/matrix.png', format='png', bbox_inches="tight")
+    plt.savefig(path + 'matrix.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
 
-def plotTemporalSeries(modes):
+def plotTemporalSeries(modes, path):
     latent_dim = modes.shape[1]
     fig, ax = plt.subplots(latent_dim, 1, figsize=(16, latent_dim * 1.6), sharex='col')
 
@@ -185,11 +184,11 @@ def plotTemporalSeries(modes):
         ax[i].legend()
         ax[i].grid()
 
-    plt.savefig(pathsBib.fig_path + 'bVAE/series.png', format='png', bbox_inches="tight")
+    plt.savefig(path + 'series.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
-def plotEcum(Ecum):
+def plotEcum(Ecum, path):
     import numpy as np
 
     fig = plt.figure()
@@ -198,11 +197,11 @@ def plotEcum(Ecum):
     plt.ylabel('Cumulative Ek')
     plt.grid()
 
-    plt.savefig(pathsBib.fig_path + 'bVAE/Ecum.png', format='png', bbox_inches="tight")
+    plt.savefig(path + 'Ecum.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
-def plotNLmodeField(modes, values):
+def plotNLmodeField(modes, values, path):
     import numpy as np
 
     valuesToPlot = np.array([-2., -1., 0., 1., 2.])
@@ -242,14 +241,16 @@ def plotNLmodeField(modes, values):
 
     fig.set_tight_layout(True)
 
-    plt.savefig(pathsBib.fig_path + 'bVAE/NLfield.png', format='png', bbox_inches="tight")
+    plt.savefig(path + 'NLfield.png', format='png', bbox_inches="tight")
 
 
 def vis_bvae(modes_file, training_file):
     import h5py
+    from lib.init import pathsBib
     from pathlib import Path
 
-    Path(pathsBib.fig_path + 'bVAE/').mkdir(exist_ok=True)
+    path = pathsBib.fig_path + 'bVAE/'
+    Path(path).mkdir(exist_ok=True)
 
     try:
         plot_training(training_file)
@@ -272,8 +273,38 @@ def vis_bvae(modes_file, training_file):
     else:
         fs = 5
 
-    plotNLmodeField(NLmodes, NLvalues)
-    plotCompleteModes(modes, temporalModes, modes.shape[0], fs, order)
-    plotTemporalSeries(temporalModes)
-    correlationMatrix(temporalModes, order)
-    plotEcum(Ecum)
+    plotNLmodeField(NLmodes, NLvalues, path)
+    plotCompleteModes(modes, temporalModes, modes.shape[0], fs, order, path)
+    plotTemporalSeries(temporalModes, path)
+    correlationMatrix(temporalModes, order, path)
+    plotEcum(Ecum, path)
+
+def vis_pod(POD):
+    import h5py
+    from lib.init import pathsBib
+    from pathlib import Path
+
+    path = pathsBib.fig_path + 'POD/'
+    Path(path).mkdir(exist_ok=True)
+
+    # Re40 case is sampled at 1tc, Re100 case is sampled at tc/5
+    if POD.re==40:
+        fs = 1
+    else:
+        fs = 5
+
+    shape = [POD.spatial_modes.shape[1],
+             POD.u_train.shape[1],
+             POD.u_train.shape[2],
+             POD.u_train.shape[3]]
+    sm = np.swapaxes(POD.spatial_modes, 0, 1).reshape(shape)
+
+    plotCompleteModes(sm,
+                      POD.temporal_modes,
+                      POD.n_modes,
+                      fs,
+                      range(POD.n_modes),
+                      path)
+
+    plotTemporalSeries(POD.temporal_modes, path)
+    plotEcum(POD.Ek_nm, path)
