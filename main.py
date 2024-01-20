@@ -7,6 +7,11 @@ NOTE: The "run" in running mode here means we do both train and infer
 """
 
 import      torch 
+
+from        lib import init, POD
+from        lib.runners import vaeRunner, latentRunner
+from        utils.plot_time import vis_temporal_Prediction
+
 import      argparse
 from        lib             import init
 from        lib.runners     import vaeRunner, latentRunner
@@ -18,6 +23,7 @@ parser.add_argument('-nn',default="easy", type=str,   help="Choose the model for
 parser.add_argument('-re',default=40,     type=int,   help="40 OR 100, Choose corresponding Reynolds number for the case")
 parser.add_argument('-m', default="test",type=str,   help='Switch the mode between train, infer and run')
 parser.add_argument('-t', default="pre", type=str,    help='The type of saved model: pre/val/final')
+parser.add_argument('-pod', default=True, type=bool,    help='Compute POD')
 args  = parser.parse_args()
 
 device = ('cuda' if torch.cuda.is_available() else "cpu")
@@ -37,6 +43,14 @@ if __name__ == "__main__":
         bvae.infer(args.t)
     elif args.m == 'run':
         bvae.run()
+
+    ## POD
+    if args.pod:
+        POD = POD.POD(datafile, n_test=bvae.config.n_test, re=args.re,
+                      path='res/', n_modes=10, delta_t=bvae.config.delta_t)
+        POD.load_data()
+        POD.get_POD()
+        POD.eval_POD()
 
 
     # Time-series prediction runner 
