@@ -56,7 +56,8 @@ if __name__ == "__main__":
     elif args.m == 'test':
         lruner.infer(args.t)
     elif args.m == 'run':
-        lruner.run()
+        lruner.train()
+        lruner.infer(args.t)
 
     vis_bvae(init.pathsBib.res_path + "modes_" + bvae.filename + ".hdf5",
              init.pathsBib.log_path + bvae.filename)
