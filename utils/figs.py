@@ -7,13 +7,14 @@ Editting: @yuningw
 """
 
 import matplotlib.pyplot as plt
+from lib.init import pathsBib
 
 
 # --------------------------------------------------------
 def plot_training(logFile):
     """Plot from tensorboard file"""
     from tbparse import SummaryReader
-    import matplotlib.pyplot as plt
+
     def loadLog(logFile):
         df = SummaryReader(logFile, pivot=True).scalars
         df = df[['step', 'General loss/KLD', 'General loss/KLD_test', 'General loss/MSE',
@@ -51,12 +52,14 @@ def plot_training(logFile):
 
     plt.legend()
 
-    plt.savefig('../figs/training.png', format='png', bbox_inches="tight")
+    plt.savefig(pathsBib.fig_path + 'bVAE/training.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
 
 def annot_max(x, y, ax=None):
+    import numpy as np
+
     xmax = x[np.argmax(y)]
     ymax = y.max()
     text = "$f/f_c={:.3f}$".format(xmax)
@@ -71,8 +74,9 @@ def annot_max(x, y, ax=None):
 
 # --------------------------------------------------------
 
-def plotCompleteModes(modes, temporalModes, numberModes, fs):
+def plotCompleteModes(modes, temporalModes, numberModes, fs, order):
     from scipy import signal
+    import numpy as np
 
     fig, ax = plt.subplots(numberModes, 3, figsize=(16, numberModes * 1.6), sharex='col')
 
@@ -111,14 +115,15 @@ def plotCompleteModes(modes, temporalModes, numberModes, fs):
             ax[i, 1].set_xlabel('$x/c$')
             ax[i, 2].set_xlabel('$f/f_c$')
 
-    plt.savefig('../figs/modes.png', format='png', bbox_inches="tight")
+    plt.savefig(pathsBib.fig_path + 'bVAE/modes.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
 
-def correlationMatrix(temporalModes):
+def correlationMatrix(temporalModes, order):
     import pandas as pd
     import seaborn as sns
+    import numpy as np
 
     df = pd.DataFrame(temporalModes[:, order])
 
@@ -164,7 +169,7 @@ def correlationMatrix(temporalModes):
     plt.xticks(rotation=0)
     plt.yticks(rotation=0)
 
-    plt.savefig('../figs/matrix.png', format='png', bbox_inches="tight")
+    plt.savefig(pathsBib.fig_path + 'bVAE/matrix.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
@@ -180,22 +185,26 @@ def plotTemporalSeries(modes):
         ax[i].legend()
         ax[i].grid()
 
-    plt.savefig('../figs/series.png', format='png', bbox_inches="tight")
+    plt.savefig(pathsBib.fig_path + 'bVAE/series.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
 def plotEcum(Ecum):
+    import numpy as np
+
     fig = plt.figure()
     plt.plot(np.arange(1, Ecum.shape[0] + 1), Ecum)
     plt.xlabel('Number of modes')
     plt.ylabel('Cumulative Ek')
     plt.grid()
 
-    plt.savefig('../figs/Ecum.png', format='png', bbox_inches="tight")
+    plt.savefig(pathsBib.fig_path + 'bVAE/Ecum.png', format='png', bbox_inches="tight")
 
 
 # --------------------------------------------------------
 def plotNLmodeField(modes, values):
+    import numpy as np
+
     valuesToPlot = np.array([-2., -1., 0., 1., 2.])
 
     # Find the indices of values_array elements in main_array
@@ -233,46 +242,38 @@ def plotNLmodeField(modes, values):
 
     fig.set_tight_layout(True)
 
-    plt.savefig('../figs/NLfield.png', format='png', bbox_inches="tight")
+    plt.savefig(pathsBib.fig_path + 'bVAE/NLfield.png', format='png', bbox_inches="tight")
 
 
-if __name__ == "__main__":
+def vis_bvae(modes_file, training_file):
     import h5py
-    import numpy as np
+    from pathlib import Path
 
-    file = '../res/modes_Re40_smallerCNN_beta0.005_wDecay0_dim2_lr0.0002OneCycleLR1e-05_bs256_epochs1000.hdf5'
+    Path(pathsBib.fig_path + 'bVAE/').mkdir(exist_ok=True)
 
-    logfile = '../logs/' + file.split('_modes.')[0].split('/')[-1].split('_epoch_')[0]
     try:
-        plot_training(logfile)
+        plot_training(training_file)
     except:
-        print(f'Warning: {logfile} could not be loaded')
+        print(f'Warning: {training_file} could not be loaded')
 
-    with h5py.File(file, 'r') as f:
+    with h5py.File(modes_file, 'r') as f:
         print("Keys: %s" % f.keys())
         temporalModes = f['vector'][:, :]
         temporalModes_test = f['vector_test'][:, :]
         modes = f['modes'][:, :]
-        zero_output = f['zero_output'][:, :]
-        mean_data = f['mean'][:, :, :, :]
-        std_data = f['std'][:, :, :, :]
         order = f['order'][:]
         Ecum = f['Ecum'][:]
         NLvalues = f['NLvalues'][:]
         NLmodes = f['NLmodes'][:]
 
     # Re40 case is sampled at 1tc, Re100 case is sampled at tc/5
-    if 'Re40' in file:
+    if 'Re40' in modes_file:
         fs = 1
     else:
         fs = 5
 
     plotNLmodeField(NLmodes, NLvalues)
-    plotCompleteModes(modes, temporalModes, modes.shape[0], fs)
-
+    plotCompleteModes(modes, temporalModes, modes.shape[0], fs, order)
     plotTemporalSeries(temporalModes)
-    correlationMatrix(temporalModes)
-
+    correlationMatrix(temporalModes, order)
     plotEcum(Ecum)
-
-    plt.show()

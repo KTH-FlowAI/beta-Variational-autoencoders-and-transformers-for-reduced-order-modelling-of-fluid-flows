@@ -1,21 +1,17 @@
 """
-Main programe
+Main program
 
 NOTE: The "run" in running mode here means we do both train and infer 
 
 @yuningw
 """
 
-import      torch 
-
-from        lib import init, POD
-from        lib.runners import vaeRunner, latentRunner
-from        utils.plot_time import vis_temporal_Prediction
-
+import      torch
 import      argparse
-from        lib             import init
+from        lib             import init, POD
 from        lib.runners     import vaeRunner, latentRunner
 from        utils.figs_time import vis_temporal_Prediction
+from        utils.figs      import vis_bvae
 
 
 parser = argparse.ArgumentParser()
@@ -44,6 +40,7 @@ if __name__ == "__main__":
     elif args.m == 'run':
         bvae.run()
 
+
     ## POD
     if args.pod:
         POD = POD.POD(datafile, n_test=bvae.config.n_test, re=args.re,
@@ -62,4 +59,6 @@ if __name__ == "__main__":
     elif args.m == 'run':
         lruner.run()
 
+    vis_bvae(init.pathsBib.res_path + "modes_" + bvae.filename + ".hdf5",
+             init.pathsBib.log_path + bvae.filename)
     vis_temporal_Prediction(model_type=args.nn, predictor=lruner, vae=bvae)
