@@ -32,5 +32,3 @@ The code in this repository features a Python implementation of reduced-order mo
 + *res*: Storage of prediction results 
 
 + *figs*: Storaging figures output 
-
-+ *reference_script*: For develop ONLY, Will be removed before publish.
