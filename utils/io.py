@@ -23,3 +23,4 @@ def load_checkpoint(model, path_name, optimizer=None):
         optimizer.load_state_dict(checkpoint['optimizer_dict'])
 
     print('Loaded checkpoint')
+

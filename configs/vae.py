@@ -26,8 +26,6 @@ class VAE_config:
     beta_warmup = 20
     
     n_test      = 200
-
-    val_ratio   = 0.2 # ratio between train and validation
     
     encWdecay   = 0
     
