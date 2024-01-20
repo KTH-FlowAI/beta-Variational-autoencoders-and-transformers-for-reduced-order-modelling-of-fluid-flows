@@ -46,6 +46,8 @@ def train_epoch(model, data, optimizer, beta, device):
             time.time() - start_epoch_time, \
             (np.mean(np.stack(logVar_batch, axis=0), 0) < 0.1).sum() # count collapsed modes
 
+
+
 def test_epoch(model, data, beta, device):
     start_epoch_time = time.time()
 

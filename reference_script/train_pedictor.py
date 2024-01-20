@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm 
 import time 
 from utils.model import VAE
-from utils.plot import colorplate as cc 
+from utils.figs_time import colorplate as cc 
 from NNs.transformer    import easyTransformerEncoder
 from utils.datas        import make_DataLoader, make_Sequence 
 from utils.train        import fit

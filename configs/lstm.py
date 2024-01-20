@@ -3,7 +3,7 @@ class lstm_config:
     A class of config for LSTM Predictor
     """
     from configs.vae import VAE_config 
-    target      = "VAE" # POD or VAE    
+
     in_dim      = 64
     d_model     = 64
     next_step   = 1
@@ -25,10 +25,10 @@ class lstm_config:
     val_split   = 0.2 
     num_train   = 135000
 
-    early_stop = False
+    early_stop = True
 
     if early_stop == True:
-        patience  = 30
+        patience  = 50
     else:
         patience  = 0 
 

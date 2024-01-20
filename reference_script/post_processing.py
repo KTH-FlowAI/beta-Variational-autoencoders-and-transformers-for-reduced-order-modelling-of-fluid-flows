@@ -13,7 +13,7 @@ from utils.config import VAE_config as vae_cfg, Name_VAE
 from utils.model import VAE
 # Plot tools
 import utils.plt_rc_setup
-from utils.plot import colorplate as cc, plot_loss, plot_signal 
+from utils.figs_time import colorplate as cc, plot_loss, plot_signal 
 from utils.NNs.Transformer import Transformer2, ResTransformer 
 from utils.NNs.EmbedTransformerEncoder import EmbedTransformerEncoder
 from utils.pp import make_Prediction, Sliding_Window_Error,l2Norm_Error

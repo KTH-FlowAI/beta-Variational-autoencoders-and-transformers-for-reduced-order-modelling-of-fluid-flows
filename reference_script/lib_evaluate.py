@@ -26,7 +26,7 @@ def encode(model, data, device):
 def decode(model, data, device):
 
     dataset = torch.utils.data.DataLoader(dataset=torch.from_numpy(data), batch_size=512,
-                                          shuffle=False, num_workers=2)
+                                        shuffle=False, num_workers=2)
     rec_list = []
     with torch.no_grad():
         for batch in dataset:
@@ -179,7 +179,7 @@ def get_samples(model, dataset_train, dataset_test, device):
 def get_Ek_t(model, data, device):
 
     dataloader = torch.utils.data.DataLoader(dataset=torch.from_numpy(data), batch_size=batch_size,
-                                               shuffle=False, pin_memory=True, num_workers=2)
+                                            shuffle=False, pin_memory=True, num_workers=2)
 
     rec_list = []
     with torch.no_grad():
@@ -252,7 +252,7 @@ if __name__ == "__main__":
                                                     batch_size=batch_size,
                                                     shuffle=False, pin_memory=True, num_workers=2)
     dataset_test = torch.utils.data.DataLoader(dataset=torch.from_numpy(u_scaled[n_train:]), batch_size=batch_size,
-                                               shuffle=False, pin_memory=True, num_workers=2)
+                                                shuffle=False, pin_memory=True, num_workers=2)
 
     for weights_file in weights_files_list:
         out_name = weights_file.split('.pth')[0].split('/')[-1]

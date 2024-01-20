@@ -16,13 +16,15 @@ def Name_VAE(cfg):
         name: A string for VAE name
     """
 
-    name =  f'smallerCNN_beta{cfg.beta}_' + \
+    name =  f"Re{cfg.Re}_" +\
+            f'smallerCNN_'+\
+            f'beta{cfg.beta}_' + \
             f'wDecay{cfg.decWdecay}_'+\
             f'dim{cfg.latent_dim}_'+\
             f'lr{cfg.lr}OneCycleLR{cfg.lr_end}_'+\
             f'bs{cfg.batch_size}_'+\
-            f'epochs{cfg.epochs}_'+\
-            f'nt{cfg.n_test}'
+            f'epochs{cfg.epochs}'
+    
     return name
 
 
@@ -37,15 +39,24 @@ def Make_Transformer_Name(cfg):
     Returns:
         name: A string for Transformer model
     """
-
-    case_name = f"{cfg.target}" +\
-                f"_{cfg.attn_type}Attn"+\
-                f"_{cfg.in_dim}in_{cfg.d_model}dmodel_{cfg.next_step}next_{cfg.nmode}dim"+\
-                f"_{cfg.embed}emb_{cfg.num_head}h_{cfg.num_block}nb_{cfg.proj_dim}ff"+\
-                f"_{cfg.act_proj}act_{cfg.out_act}outact"+\
-                f"_{cfg.Epoch}Epoch_{cfg.num_train}N_{cfg.early_stop}ES_{cfg.patience}P"
     
+    case_name = f"{cfg.attn_type}Attn_"+\
+                f"{cfg.in_dim}in_"      +\
+                f'{cfg.d_model}dmodel_'  +\
+                f'{cfg.next_step}next_'+\
+                f'{cfg.nmode}dim_'+\
+                f"{cfg.embed}emb_"+\
+                f"{cfg.num_head}h_"+\
+                f"{cfg.num_block}nb_"+\
+                f"{cfg.proj_dim}ff_"+\
+                f"{cfg.act_proj}act_"+\
+                f"{cfg.out_act}outact_"+\
+                f"{cfg.Epoch}Epoch_"+\
+                f"{cfg.num_train}N_"+\
+                f"{cfg.early_stop}ES_"+\
+                f"{cfg.patience}P"
     return case_name
+
 
 
 def Make_LSTM_Name(cfg):
@@ -59,11 +70,19 @@ def Make_LSTM_Name(cfg):
         name: A string for LSTM model
     """
     
-    case_name = f"LSTM"+\
-                f"_{cfg.in_dim}in_{cfg.d_model}dmodel_{cfg.next_step}next_{cfg.nmode}dim"+\
-                f"_{cfg.embed}emb_{cfg.hidden_size}hideen_{cfg.num_layer}nlayer_"+\
-                f"_{cfg.out_act}outact"+\
-                f"_{cfg.Epoch}Epoch_{cfg.num_train}N_{cfg.early_stop}ES_{cfg.patience}P"
+    case_name = f"LSTM_"+\
+                f"{cfg.in_dim}in_"+\
+                f"{cfg.d_model}dmodel_"+\
+                f"{cfg.next_step}next_"+\
+                f"{cfg.nmode}dim_"+\
+                f"{cfg.embed}emb_"+\
+                f"{cfg.hidden_size}hideen_"+\
+                f"{cfg.num_layer}nlayer_"+\
+                f"{cfg.out_act}outact_"+\
+                f"{cfg.Epoch}Epoch_"+\
+                f"{cfg.num_train}N_"+\
+                f"{cfg.early_stop}ES_"+\
+                f"{cfg.patience}P"
     
     return case_name
 

@@ -11,30 +11,23 @@ import numpy as np
 import torch 
 from torch          import nn
 
-import utils.train
-from utils.model    import get_predictors, get_vae, save_checkpoint, load_checkpoint
-from utils.train    import fit
-from utils.datas    import loadData, get_vae_DataLoader , make_DataLoader, make_Sequence
-from utils.pp       import make_Prediction, Sliding_Window_Error
-from utils.chaotic  import Intersection
+from lib.init       import pathsBib
+from lib.train      import * 
+from lib.model      import * 
+from lib.pp_time    import * 
+from lib.pp_space   import spatial_Mode
+from lib.datas      import * 
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-data_path   = 'data/'
-model_path  = 'models/'; 
-res_path    = 'res/'
-fig_path    = 'figs/'
-log_path    = 'train_logs/'
-chekp_path  =  model_path + 'checkpoints'
 
-Path(data_path).mkdir(exist_ok=True)
-Path(model_path).mkdir(exist_ok=True)
-Path(res_path).mkdir(exist_ok=True)
-Path(fig_path).mkdir(exist_ok=True)
-Path(chekp_path).mkdir(exist_ok=True)
 
+
+####################################################
+### RUNNER for beta-VAE
+####################################################
 
 class vaeRunner(nn.Module):
-    def __init__(self, device) -> None:
+    def __init__(self, device, datafile) -> None:
         """
         A runner for beta-VAE
 
@@ -42,6 +35,7 @@ class vaeRunner(nn.Module):
 
             device          :       (Str) The device going to use
             
+            datafile        :       (Str) Path of training data
         """
         
         from configs.vae import VAE_config as cfg 
@@ -53,14 +47,47 @@ class vaeRunner(nn.Module):
         self.config     = cfg
         self.filename   = Name_VAE(self.config)
         
+        self.datafile   = datafile
+
         self.device     = device
 
         self.model      = get_vae(self.config.latent_dim)
         
         self.model.to(device)
 
+        self.fmat       =  '.pth.tar'
+
         print(f"INIT betaVAE, device: {device}")
         print(f"Case Name:\n {self.filename}")
+#-------------------------------------------------
+    def run(self):
+        self.train()
+        self.infer(model_type='final')
+
+#-------------------------------------------------
+    def train(self):
+        print("#"*30)
+        print("INFO: Start Training ")
+        self.get_data()
+        self.compile()
+        self.fit()
+        self.train_dl   = None
+        self.val_dl     = None
+        print(f"INFO: Training finished, cleaned the data loader")
+        print("#"*30)
+
+#-------------------------------------------------
+    def infer(self, model_type):
+        print("#"*30)
+        self.load_pretrain_model(model_type=model_type)
+        print("INFO: Model has been loaded!")
+        
+        self.get_test_data()
+        print("INFO: test data has been loaded!")
+        self.post_process()
+
+        print(f"INFO: Inference ended!")
+        print("#"*30)
 
 
 #-------------------------------------------------
@@ -72,37 +99,29 @@ class vaeRunner(nn.Module):
 
         """
         
-        datafile = data_path + "Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5"
-
-        try:
-            if not os.path.exists(datafile):
-                import urllib.request
-                try:
-                    print(f"{datafile}")
-                    print("Not found, trying to download example dataset")
-                    urllib.request.urlretrieve('https://zenodo.org/records/10501216/files/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5?download=1', datafile)
-                    print(f"File downloaded successfully to {datafile}")
-                except Exception as e:
-                    print(f"Failed to download sample dataset. Error: {e}")
-            u_scaled, self.mean, self.std = loadData(datafile)
-            ## Down-Sample the data with frequency
-            ## since we already down-sampled it for database, we skip it here
-            u_scaled            = u_scaled[::1]
-            n_total             = u_scaled.shape[0]
-            self.n_train             = n_total - self.config.n_test
-            print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
+        # datafile = 
+        
+        u_scaled, self.mean, self.std = loadData(self.datafile)
+        ## Down-Sample the data with frequency
+        ## since we already down-sampled it for database, we skip it here
+        
+        u_scaled            = u_scaled[::self.config.downsample]
+        n_total             = u_scaled.shape[0]
+        self.n_train        = n_total - self.config.n_test
+        print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
                 f"N test: {self.config.n_test:d},"+\
                 f"N total {n_total:d}")
-        except: 
-            print(f"Error: Failed loading data")
-
-        self.train_dl, self.val_dl = get_vae_DataLoader(  d_train=u_scaled[:self.n_train],
-                                                d_val=u_scaled[self.n_train:],
-                                                device= self.device,
-                                                batch_size= self.config.batch_size)
+        
+        self.train_dl, self.val_dl = get_vae_DataLoader(    d_train=u_scaled,
+                                                            n_train=self.n_train,
+                                                            device= self.device,
+                                                            batch_size= self.config.batch_size)
         print( f"INFO: Dataloader generated, Num train batch = {len(self.train_dl)} \n" +\
                 f"Num val batch = {len(self.val_dl)}")
         
+
+
+
 #-------------------------------------------------
     def compile(self):
         """
@@ -133,25 +152,26 @@ class vaeRunner(nn.Module):
                                             final_div_factor=self.config.lr/self.config.lr_end, 
                                             pct_start=0.2)
 
-        self.beta_sch = utils.train.betaScheduler(startvalue=self.config.beta_init,
-                                                endvalue=self.config.beta,
-                                                warmup=self.config.beta_warmup)
+        self.beta_sch = betaScheduler(  startvalue =self.config.beta_init,
+                                        endvalue      =self.config.beta,
+                                        warmup        =self.config.beta_warmup)
 
         print(f"INFO: Compiling Finished!")
 
 
 #-------------------------------------------------
 
-    def run(self):
+    def fit(self):
         """
 
         Training beta-VAE
         
         """
         from torch.utils.tensorboard import SummaryWriter
+        from utils.io import save_checkpoint
 
         print(f"Training {self.filename}")
-        logger = SummaryWriter(log_dir=log_path + self.filename)
+        logger = SummaryWriter(log_dir=pathsBib.log_path + self.filename)
 
         bestloss = 1e6
         loss = 1e6
@@ -159,20 +179,20 @@ class vaeRunner(nn.Module):
         for epoch in range(1, self.config.epochs + 1):
             self.model.train()
             beta = self.beta_sch.getBeta(epoch, prints=False)
-            loss, MSE, KLD, elapsed, collapsed = utils.train.train_epoch(model=self.model,
+            loss, MSE, KLD, elapsed, collapsed = train_epoch(model=self.model,
                                                                         data=self.train_dl,
                                                                         optimizer=self.opt,
                                                                         beta=beta,
                                                                         device=self.device)
             self.model.eval()
-            loss_test, MSE_test, KLD_test, elapsed_test = utils.train.test_epoch(model=self.model,
+            loss_test, MSE_test, KLD_test, elapsed_test = test_epoch(model=self.model,
                                                                                 data=self.val_dl,
                                                                                 beta=beta,
                                                                                 device=self.device)
 
             self.opt_sch.step()
 
-            utils.train.printProgress(epoch=epoch,
+            printProgress(epoch=epoch,
                                     epochs=self.config.epochs,
                                     loss=loss,
                                     loss_test=loss_test,
@@ -193,16 +213,117 @@ class vaeRunner(nn.Module):
             if (loss_test < bestloss and epoch > 100):
                 bestloss = loss_test
                 checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-                ckp_file = f'{chekp_path}/{self.filename}_epoch_bestTest.pth.tar'
+                ckp_file = f'{pathsBib.chekp_path}/{self.filename}_bestVal' + self.fmat
                 save_checkpoint(state=checkpoint, path_name=ckp_file)
                 print(f'## Checkpoint. Epoch: {epoch}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
         checkpoint = {'state_dict': self.model.state_dict(), 'optimizer_dict': self.opt.state_dict()}
-        ckp_file = f'{chekp_path}/{self.filename}_epoch_final.pth.tar'
+        ckp_file = f'{pathsBib.chekp_path}/{self.filename}_final' + self.fmat
         save_checkpoint(state=checkpoint, path_name=ckp_file)
         print(f'Checkpoint. Final epoch, loss: {loss}, test loss: {loss_test}, saving checkpoint {ckp_file}')
 
 
+#-------------------------------------------------
+
+    def load_pretrain_model(self,model_type='pre'):
+        """
+
+        Load the pretrained model for beta VAE
+
+        Args: 
+
+            model_type  : ['pre', 'val','final']  (str) Choose from pre-trained, best valuation and final model 
+        
+        """
+        
+        model_type_all = ['pre','val','final']
+        assert(model_type in model_type_all), print('ERROR: No type of the model matched')
+
+        if      model_type == 'pre':    model_path = pathsBib.pretrain_path + self.filename               + self.fmat
+        elif    model_type == 'val' :   model_path = pathsBib.chekp_path    + self.filename + '_bestVal' + self.fmat
+        elif    model_type == 'final' : model_path = pathsBib.chekp_path    + self.filename + '_final'    + self.fmat
+        
+
+        try:
+            ckpoint = torch.load(model_path, map_location= self.device)
+            
+        except:
+            print("ERROR: Model NOT found!")
+            exit()
+        stat_dict   = ckpoint['state_dict']
+        self.model.load_state_dict(stat_dict)
+        print(f'INFO: the state dict has been loaded!')
+
+#-------------------------------------------------
+
+    def get_test_data(self):
+        """
+        
+        Generate the DataLoder for test 
+
+        """
+        from torch.utils.data import DataLoader
+        
+        u_scaled, self.mean, self.std = loadData(self.datafile)
+        
+        u_scaled            = u_scaled[::self.config.downsample]
+        n_total             = u_scaled.shape[0]
+        self.n_train        = n_total - self.config.n_test
+        
+        print(f"INFO: Data Summary: N train: {self.n_train:d}," + \
+                f"N test: {self.config.n_test:d},"+\
+                f"N total {n_total:d}")
+        
+        self.train_d, self.test_d = u_scaled[:self.n_train] ,u_scaled[self.n_train:]
+
+        self.train_dl        = DataLoader(torch.from_numpy(self.train_d), 
+                                        batch_size=1,
+                                        shuffle=False, 
+                                        pin_memory=True, 
+                                        num_workers=2)
+        self.test_dl       = DataLoader(torch.from_numpy(self.test_d), 
+                                        batch_size=1,
+                                        shuffle=False, 
+                                        pin_memory=True, 
+                                        num_workers=2)
+        
+        print(f"INFO: Dataloader generated, Num Test batch = {len(self.test_dl)}")
+        
+
+
+#-------------------------------------------------
+    def post_process(self):
+
+        """
+
+        Post-processing for Beta-VAE 
+
+        """
+
+        assert (self.test_dl != None), print("ERROR: NOT able to do post-processing without test data!")
+
+        fname = pathsBib.res_path + "modes_" + self.filename
+        
+        if_save_spatial = spatial_Mode(fname,
+                                    model=self.model,latent_dim=self.config.latent_dim,
+                                    train_data=self.train_d,test_data=self.test_d,
+                                    dataset_train=self.train_dl,dataset_test=self.test_dl,
+                                    mean = self.mean, std = self.std,
+                                    device= self.device,
+                                    if_order= True,
+                                    if_nlmode= True,
+                                    if_Ecumt= True,
+                                    if_Ek_t= True
+                                    )
+        if if_save_spatial: 
+            print(f"INFO: Spatial Modes finished!")
+        else:
+            print(f'ERROR: Spatial modes has not saved!')
+        
+
+####################################################
+### RUNNER for Temporal-dynamics Prediction
+####################################################
 
 
 class latentRunner(nn.Module): 
@@ -222,8 +343,11 @@ class latentRunner(nn.Module):
         print("#"*30)
         print(f"INIT temporal predictor: {name}, device: {device}")
         self.device = device
-        self.model, self.filename, self.config = get_predictors(name)
+        self.model,self.filename, self.config = get_predictors(name)
+        
         self.NumPara = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
+
+        self.fmat   = '.pt'
         print(f"INFO: The model has been generated, num of parameter is {self.NumPara}")
         print(f"Case Name:\n {self.filename}")
 
@@ -235,11 +359,37 @@ class latentRunner(nn.Module):
         print("INFO: Start Training ")
         self.get_data()
         self.compile()
-        self.run()
-        
+        self.fit()
         self.train_dl   = None
         self.val_dl     = None
         print(f"INFO: Training finished, cleaned the data loader")
+        print("#"*30)
+
+#-------------------------------------------------
+    def infer(self, model_type = 'pre',
+            if_window=True, 
+            if_pmap=True):
+        """
+        
+        Inference and evaluation of the model 
+
+        Args: 
+
+            model_type: (str) The type of model to load 
+
+            if_window : (str) If compute the sliding-widnow error 
+
+            if_pmap : (str) If compute the Poincare Map 
+        
+        """
+        
+        print("#"*30)
+        print("INFO: Start post-processing")
+        # self.com
+        self.load_pretrain_model(model_type=model_type)
+
+        self.post_process(if_window,if_pmap)
+        print(f"INFO: Inference ended!")
         print("#"*30)
 
 #-------------------------------------------------
@@ -250,7 +400,7 @@ class latentRunner(nn.Module):
         Get the latent space variable data for training and validation
         """ 
         try: 
-            hdf5 = h5py.File(data_path + "latent_data.h5py")
+            hdf5 = h5py.File(pathsBib.data_path + "latent_data.h5py")
             data   = np.array(hdf5['vector'])
         except:
             print(f"Error: DataBase not found, please check path or keys")
@@ -277,13 +427,13 @@ class latentRunner(nn.Module):
 
 #-------------------------------------------------
 
-    def run(self): 
+    def fit(self): 
         """
         Training Model, we use the fit() function 
         """
 
         s_t = time.time()
-        history = fit(      self.device, 
+        history = fitting(  self.device, 
                             self.model,
                             self.train_dl, 
                             self.loss_fn,
@@ -302,21 +452,43 @@ class latentRunner(nn.Module):
                         "history":history,
                         "time":cost_time}
         
-        torch.save(check_point,model_path + self.filename+".pt")
+        torch.save(check_point,pathsBib.model_path + self.filename + self.fmat)
         print(f"INFO: The checkpoints has been saved!")
 
 #-------------------------------------------------
 
 
-    def load_pretrain_model(self):
+    def load_pretrain_model(self,model_type='pre'):
+        """
+
+        Load the pretrained model for beta VAE
+
+        Args: 
+
+            model_type  : ['pre', 'val','final']  (str) Choose from pre-trained, best valuation and final model 
+        
+        """
+        
+        model_type_all = ['pre','val','final']
+        assert(model_type in model_type_all), print('ERROR: No type of the model matched')
+
+        if      model_type == 'pre':    model_path = pathsBib.pretrain_path + self.filename               + self.fmat
+        elif    model_type == 'val' :   model_path = pathsBib.chekp_path    + self.filename + '_bestVal'  + self.fmat
+        elif    model_type == 'final' : model_path = pathsBib.chekp_path    + self.filename + '_final'    + self.fmat
         try:
-            ckpoint = torch.load(model_path + self.filename + ".pt", map_location= self.device)
+            ckpoint = torch.load(model_path, map_location= self.device)
+            
         except:
             print("ERROR: Model NOT found!")
             exit()
         stat_dict   = ckpoint['model']
+
         self.model.load_state_dict(stat_dict)
+        self.history = ckpoint['history']
+
+        
         print(f'INFO: the state dict has been loaded!')
+        print(self.model.eval)
 
 
 #-------------------------------------------------
@@ -330,13 +502,12 @@ class latentRunner(nn.Module):
 
             if_pmap     :   (bool) If compute the Poincare Map 
         """ 
-
+        
         try: 
-            # hdf5 = h5py.File("data/Data2PlatesGap1Re40_Alpha-00_downsampled_v6.hdf5")
-            hdf5        = h5py.File(data_path + "latent_data.h5py")
+            hdf5        = h5py.File(pathsBib.data_path + "latent_data.h5py")
             test_data   = np.array(hdf5['vector_test'])
         except:
-            print(f"Error: DataBase not found, please check path or keys")
+            print(f"Error: DataBase not found, please check path or keys or try run the vae first")
 
         print(f"INFO: Test data loaded, SIZE = {test_data.shape}")
         Preds = make_Prediction(test_data   = test_data, 
@@ -368,7 +539,7 @@ class latentRunner(nn.Module):
         
         
         np.savez_compressed(
-                            res_path + self.filename + ".npz",
+                            pathsBib.res_path + self.filename + ".npz",
                             p = Preds, 
                             g = test_data,
                             e = window_error,
