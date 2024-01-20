@@ -68,13 +68,30 @@ def annot_max(x, y, ax=None):
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
     arrowprops = dict(arrowstyle="->", connectionstyle="angle,angleA=0,angleB=60")
     kw = dict(xycoords='data', textcoords="axes fraction",
-              arrowprops=arrowprops, bbox=bbox_props, ha="right", va="top")
+            arrowprops=arrowprops, bbox=bbox_props, ha="right", va="top")
     ax.annotate(text, xy=(xmax, ymax), xytext=(0.94, 0.96), **kw)
 
 
 # --------------------------------------------------------
 
 def plotCompleteModes(modes, temporalModes, numberModes, fs, order, path):
+    """
+    Plot the obtained spatial modes and temporal evolution of the latent variables in frequency domain, using welch method
+
+    Args:
+
+        modes           : (NumpyArray)   Spatial modes
+
+        temporal_modes  : (NumpyArray)   Latent varibles from VAE
+
+        numberModes     : (int) Number of modes to be ploted
+
+        fs              : (int) Sampling frequency of welch metod
+
+        order           : (list/NumpyArray) The ranked results of modes accroding to energy level 
+
+        path            : (str) Path to Save figure
+    """
     from scipy import signal
     import numpy as np
 
@@ -91,13 +108,13 @@ def plotCompleteModes(modes, temporalModes, numberModes, fs, order, path):
         Vlim = max(abs(Vplot.flatten()))
 
         im = ax[i, 0].imshow(Uplot, cmap="RdBu_r", vmin=-Ulim, vmax=Ulim,
-                             extent=[-9, 87, -14, 14])
+                            extent=[-9, 87, -14, 14])
         # ax[mode,0].set_title('Mode ' + str(mode) + ', u')
         ax[i, 0].set_ylabel('y/c')
         fig.colorbar(im, ax=ax[i, 0], shrink=0.8, aspect=10)
 
         im = ax[i, 1].imshow(Vplot, cmap="RdBu_r", vmin=-Vlim, vmax=Vlim,
-                             extent=[-9, 87, -14, 14])
+                            extent=[-9, 87, -14, 14])
         ax[i, 1].set_title('Mode ' + str(i + 1))
         # ax[mode,1].set_ylabel('y/c')
         fig.colorbar(im, ax=ax[i, 1], shrink=0.8, aspect=10)
@@ -120,6 +137,18 @@ def plotCompleteModes(modes, temporalModes, numberModes, fs, order, path):
 # --------------------------------------------------------
 
 def correlationMatrix(temporalModes, order, path):
+    """
+    Visualisation of the correlation matrix to demonstrate the orthogonality 
+
+    Args:   
+
+        temporalModes   :   (NumpyArray) Latent variables encoded by VAE
+
+        order           : (list/NumpyArray) The ranked results of modes accroding to energy level 
+
+        path            : (str) Path to Save figure
+    
+    """
     import pandas as pd
     import seaborn as sns
     import numpy as np
@@ -174,6 +203,15 @@ def correlationMatrix(temporalModes, order, path):
 # --------------------------------------------------------
 
 def plotTemporalSeries(modes, path):
+    """
+    
+    Visualize the temproal evolution of the latent variables 
+
+    modes   :   (NumpyArray) The latent variables from VAE
+
+    path    :   (str) Path to Save Figure
+    
+    """
     latent_dim = modes.shape[1]
     fig, ax = plt.subplots(latent_dim, 1, figsize=(16, latent_dim * 1.6), sharex='col')
 
@@ -189,6 +227,14 @@ def plotTemporalSeries(modes, path):
 
 # --------------------------------------------------------
 def plotEcum(Ecum, path):
+    """
+    Show the accumlative energy level 
+
+    Ecum    :   (NumpyArray) Obtained energy level 
+
+    path    :   (str) Path to Save Figure
+
+    """
     import numpy as np
 
     fig = plt.figure()
@@ -202,6 +248,18 @@ def plotEcum(Ecum, path):
 
 # --------------------------------------------------------
 def plotNLmodeField(modes, values, path):
+    """
+    Visualize the non-linear mode
+
+    Args:
+
+        modes   :   (NumpyArray) The spatial modes using decoder.
+
+        values  :   (float) A non-zero value as the element in latent vector
+
+        path    :   (str) Path to Save figure
+    
+    """
     import numpy as np
 
     valuesToPlot = np.array([-2., -1., 0., 1., 2.])
@@ -245,6 +303,15 @@ def plotNLmodeField(modes, values, path):
 
 
 def vis_bvae(modes_file, training_file):
+    """
+    Visualisation of the beta-VAE results 
+
+    Args:   
+        modes_file      :   The file saves the post-processing results of VAE 
+
+        training_file   : The history and log of training the model
+    
+    """
     import h5py
     from lib.init import pathsBib
     from pathlib import Path
@@ -280,6 +347,15 @@ def vis_bvae(modes_file, training_file):
     plotEcum(Ecum, path)
 
 def vis_pod(POD):
+    """
+    Visualisaton of POD results 
+
+    Args:
+
+        POD : (lib.POD.POD) The running object for implmenting POD 
+    
+    """
+
     import h5py
     from lib.init import pathsBib
     from pathlib import Path
@@ -294,17 +370,17 @@ def vis_pod(POD):
         fs = 5
 
     shape = [POD.spatial_modes.shape[1],
-             POD.u_train.shape[1],
-             POD.u_train.shape[2],
-             POD.u_train.shape[3]]
+            POD.u_train.shape[1],
+            POD.u_train.shape[2],
+            POD.u_train.shape[3]]
     sm = np.swapaxes(POD.spatial_modes, 0, 1).reshape(shape)
 
     plotCompleteModes(sm,
-                      POD.temporal_modes,
-                      POD.n_modes,
-                      fs,
-                      range(POD.n_modes),
-                      path)
+                    POD.temporal_modes,
+                    POD.n_modes,
+                    fs,
+                    range(POD.n_modes),
+                    path)
 
     plotTemporalSeries(POD.temporal_modes, path)
     plotEcum(POD.Ek_nm, path)
