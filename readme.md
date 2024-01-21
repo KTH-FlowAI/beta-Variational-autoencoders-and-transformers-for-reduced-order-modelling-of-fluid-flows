@@ -1,6 +1,5 @@
 # $\beta$-Variational autoencoders and transformers for reduced-order modelling of fluid flow
 
-This is the branch for yuningw to develop the code. Will be merged to master. 
 
 ## Introduction
 The code in this repository features a Python implementation of reduced-order model (ROM) of turbulent flow using $\beta$-variational autoencoders and transformer neural network. More details about the implementation and results from the training are available in ["$\beta$-Variational autoencoders and transformers for reduced-order modelling of fluid flow",Alberto Solera-Rico, Carlos Sanmiguel Vila, M. A. Gómez, Yuning Wang, Abdulrahman Almashjary, Scott T. M. Dawson, Ricardo Vinuesa](https://arxiv.org/abs/2304.03571)
