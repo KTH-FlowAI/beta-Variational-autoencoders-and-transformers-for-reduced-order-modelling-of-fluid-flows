@@ -147,7 +147,8 @@ class vaeRunner(nn.Module):
         
         self.opt_sch = lr_scheduler.OneCycleLR(self.opt, 
                                             max_lr=self.config.lr,
-                                            total_steps=self.config.epochs, 
+                                            epochs=self.config.epochs,          # total_steps = epochs * steps_per_epoch
+                                            steps_per_epoch=len(self.train_dl),
                                             div_factor=2, 
                                             final_div_factor=self.config.lr/self.config.lr_end, 
                                             pct_start=0.2)
